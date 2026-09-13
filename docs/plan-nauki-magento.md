@@ -287,10 +287,9 @@ założenie tego etapu.
 **Cel:** zbudować realistyczny pipeline CI, jaki spotkasz w produkcyjnych projektach
 Magento — warstwowo, od szybkich sprawdzeń do pełnego builda produkcyjnego.
 
-Ten projekt nie ma jeszcze zdalnego repo na GitHubie — jeśli chcesz faktycznie
-zobaczyć workflow w akcji (a nie tylko sprawdzić składnię YAML), będziesz musiał(a)
-najpierw założyć repo na GitHubie i wypchnąć do niego ten kod (bez `src/`, zgodnie z
-`.gitignore`).
+Projekt ma już zdalne repo na GitHubie (`origin`), więc workflow możesz od razu
+wypychać i patrzeć jak faktycznie działa w zakładce Actions, a nie tylko sprawdzać
+składnię YAML lokalnie.
 
 **Kluczowe pojęcia:** `services:` w GitHub Actions (kontenery pomocnicze jak MySQL/
 OpenSearch/RabbitMQ dostępne dla joba), macierz (`strategy.matrix`) do testowania

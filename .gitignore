@@ -1,3 +1,6 @@
-src/
+/src/*
+!/src/app/
+/src/app/*
+!/src/app/code/
+
 compose.versions.yaml
-!src/app/code/

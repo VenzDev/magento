@@ -84,12 +84,39 @@ komponentów dodatkowo `bin/magento indexer:reindex`.
 
 ## Jak pracować nad zadaniami z planu nauki
 
-- To repo istnieje głównie do nauki — **nie dawaj od razu gotowych, kompletnych
-  rozwiązań zadań z `docs/plan-nauki-magento.md`**, chyba że użytkownik jawnie o to
-  poprosi. Domyślnie: podpowiedzi, review konkretnego pliku, wyjaśnienie koncepcji,
-  wskazanie błędu — implementację robi użytkownik.
-- Gdy użytkownik prosi o review/debug konkretnego pliku modułu `Training/*` —
-  potraktuj to normalnie jak każde zadanie inżynierskie (czytaj, testuj, popraw).
+Praca jest **hybrydowa**, podzielona wg zasady "szkielet ode mnie, logika od
+użytkownika":
+
+- **Ja (Claude) tworzę szkielet/rusztowanie** dla zadania z danego etapu:
+  `registration.php`, `etc/module.xml`, szkielety klas z pustymi/`TODO` metodami,
+  pliki XML (`di.xml`, `db_schema.xml`, `communication.xml`, `queue_*.xml`,
+  `webapi.xml`, layout, UI Component listing/form) — czyli konfigurację i
+  boilerplate, gdzie nie ma czego się nauczyć poza poznaniem samej struktury.
+- **Użytkownik dopisuje właściwą logikę** — treść metod repozytoriów, walidację w
+  konsumerze RabbitMQ, logikę pluginów/obserwerów, zapytania `SearchCriteriaBuilder`,
+  itd. — czyli to, co faktycznie uczy Magento.
+- Zostaw jasno oznaczone `// TODO:` (z krótkim opisem oczekiwanej logiki, bez
+  gotowego rozwiązania) w miejscach, które ma uzupełnić użytkownik.
+- Gdy użytkownik prosi o review/debug/pomoc z konkretnym `TODO` albo już napisanym
+  kodem — potraktuj to normalnie jak każde zadanie inżynierskie (czytaj, testuj,
+  popraw), nie trzymaj się już zasady "nie dawaj gotowca".
+- Jeśli użytkownik jawnie poprosi o pełne rozwiązanie całego zadania (nie tylko
+  szkielet) — zrób to bez oporu, to jego decyzja co do tempa nauki.
 - Po zamknięciu etapu z planu, jeśli użytkownik prosi o commit — commituj tylko
   `src/app/code/Training/**` i pliki poza `src/` (reszta `src/` jest gitignored i tak
   nie trafi do repo).
+
+## Git — commitowanie wygenerowanych plików
+
+- Pliki generowane przez Claude Code (szkielety modułów, konfiguracja, dokumentacja
+  jak plan nauki) **mają trafiać do repo** — commituj je od razu po utworzeniu/
+  zakończeniu logicznego kroku, bez czekania na wyraźne "zrób commit" za każdym
+  razem. To jest jawna, trwała autoryzacja użytkownika na commitowanie (nie na
+  `push` — to dalej wymaga potwierdzenia, chyba że użytkownik powie inaczej).
+- **Zanim cokolwiek napiszesz pod `src/app/code/`, sprawdź `git check-ignore -v
+  <ścieżka>`** — `.gitignore` ma reguły odblokowujące `src/app/code/` spod
+  ignorowanego `src/`; jeśli kiedyś zmienisz strukturę katalogów w `src/`, upewnij
+  się, że nowa ścieżka faktycznie nie jest ignorowana, zanim założysz że commit
+  zadziała.
+- Repo ma już remote `origin` (`git@github.com:VenzDev/magento.git`), branch
+  `main`. Nie pushuj bez wyraźnej prośby.
