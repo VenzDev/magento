@@ -21,10 +21,8 @@ class Index extends Action implements HttpGetActionInterface
 
     public function execute(): ResultInterface
     {
-        // TODO: zbuduj stronę przez $this->resultPageFactory->create() i ustaw
-        // tytuł strony (np. $page->getConfig()->getTitle()->set('...')), po czym
-        // zwróć obiekt strony. Layout handle "helloworld_index_index" (z
-        // view/frontend/layout/) zostanie automatycznie dołączony po nazwie
-        // route/controller/action.
+        $page = $this->resultPageFactory->create();
+        $page->getConfig()->getTitle()->set('Hello World');
+        return $page;
     }
 }

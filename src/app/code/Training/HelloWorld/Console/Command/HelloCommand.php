@@ -20,7 +20,7 @@ class HelloCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        // TODO: wypisz pozdrowienie przez $output->writeln(...) i zwróć
-        // Symfony\Component\Console\Command\Command::SUCCESS.
+        $output->writeln('Hello, Magento!');
+        return Command::SUCCESS;
     }
 }
