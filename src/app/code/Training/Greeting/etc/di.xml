@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Training\Greeting\Api\Data\GreetingInterface" type="Training\Greeting\Model\Greeting"/>
+    <preference for="Training\Greeting\Api\GreetingRepositoryInterface" type="Training\Greeting\Model\GreetingRepository"/>
+    <preference for="Training\Greeting\Api\GreetingSearchResultsInterface" type="Magento\Framework\Api\SearchResults"/>
+</config>
