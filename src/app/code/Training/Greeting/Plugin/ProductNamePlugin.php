@@ -15,7 +15,8 @@ class ProductNamePlugin
      *
      * TODO: dopisz widoczny sufiks do nazwy, np. `return $result . ' 👋';`
      */
-    public function afterGetName(Product $subject, $result)
+    public function afterGetName(Product $subject, $result): string
     {
+        return $result . ' 👋';
     }
 }

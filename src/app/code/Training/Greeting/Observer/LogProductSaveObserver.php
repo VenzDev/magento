@@ -23,10 +23,9 @@ class LogProductSaveObserver implements ObserverInterface
         /** @var Product $product */
         $product = $observer->getEvent()->getData('product');
 
-        // TODO:
-        // 1. $greeting = $this->greetingFactory->create();
-        // 2. $greeting->setMessage("Zapisano produkt: {$product->getSku()}");
-        // 3. $greeting->setCreatedAt((new \DateTime())->format('Y-m-d H:i:s'));
-        // 4. $this->greetingRepository->save($greeting);
+        $greeting = $this->greetingFactory->create();
+        $greeting->setMessage("Zapisano produkt: {$product->getSku()}")
+            ->setCreatedAt((new \DateTime())->format('Y-m-d H:i:s'));
+        $this->greetingRepository->save($greeting);
     }
 }

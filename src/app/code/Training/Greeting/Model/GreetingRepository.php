@@ -28,42 +28,61 @@ class GreetingRepository implements GreetingRepositoryInterface
 
     public function save(GreetingInterface $greeting): GreetingInterface
     {
-        // TODO: zapisz encję przez $this->resource->save($greeting) w
-        // try/catch; przy wyjątku przerzuć jako CouldNotSaveException
-        // (z poprzednim wyjątkiem jako $cause, żeby nie zgubić stack trace);
-        // na końcu zwróć $greeting.
+        try {
+            $this->resource->save($greeting);
+        } catch (\Exception $e) {
+            throw new CouldNotSaveException(
+                __('Could not save greeting'),
+                $e
+            );
+        }
+
+        return $greeting;
     }
 
     public function getById(int $id): GreetingInterface
     {
-        // TODO:
-        // 1. $greeting = $this->greetingFactory->create();
-        // 2. $this->resource->load($greeting, $id);
-        // 3. jeśli $greeting->getId() jest puste, rzuć
-        //    NoSuchEntityException::singleField('entity_id', $id);
-        // 4. zwróć $greeting.
+        $greeting = $this->greetingFactory->create();
+        $this->resource->load($greeting, $id);
+
+        if ($greeting->getId() === null) {
+            throw new NoSuchEntityException(
+                __('Could not find greeting with ID %1', $id)
+            );
+        }
+
+        return $greeting;
     }
 
     public function getList(SearchCriteriaInterface $searchCriteria)
     {
-        // TODO:
-        // 1. $collection = $this->collectionFactory->create();
-        // 2. $this->collectionProcessor->process($searchCriteria, $collection);
-        // 3. $searchResults = $this->searchResultsFactory->create();
-        // 4. $searchResults->setSearchCriteria($searchCriteria);
-        // 5. $searchResults->setItems($collection->getItems());
-        // 6. $searchResults->setTotalCount($collection->getSize());
-        // 7. zwróć $searchResults.
+        $collection = $this->collectionFactory->create();
+        $this->collectionProcessor->process($searchCriteria, $collection);
+
+        $searchResults = $this->searchResultsFactory->create();
+        $searchResults->setSearchCriteria($searchCriteria);
+        $searchResults->setItems($collection->getItems());
+        $searchResults->setTotalCount($collection->getSize());
+
+        return $searchResults;
     }
 
     public function delete(GreetingInterface $greeting): bool
     {
-        // TODO: $this->resource->delete($greeting) w try/catch; przy wyjątku
-        // rzuć CouldNotDeleteException; na końcu zwróć true.
+        try {
+            $this->resource->delete($greeting);
+        } catch (\Exception $e) {
+            throw new CouldNotDeleteException(
+                __('Could not delete greeting'),
+                $e
+            );
+        }
+
+        return true;
     }
 
     public function deleteById(int $id): bool
     {
-        // TODO: return $this->delete($this->getById($id));
+        return $this->delete($this->getById($id));
     }
 }
