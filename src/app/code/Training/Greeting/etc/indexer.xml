@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Indexer/etc/indexer.xsd">
+    <indexer id="training_greeting_count"
+             view_id="training_greeting_count"
+             class="Training\Greeting\Model\Indexer\GreetingCountIndexer">
+        <title translate="true">Training Greeting Count</title>
+        <description translate="true">Liczy wpisy training_greeting per produkt.</description>
+    </indexer>
+</config>

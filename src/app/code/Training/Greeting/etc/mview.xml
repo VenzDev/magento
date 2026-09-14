@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Indexer/etc/mview.xsd">
+    <!--
+        Pozwala przełączyć training_greeting_count na tryb "Update by Schedule"
+        (bin/magento indexer:set-mode schedule training_greeting_count). Bez tego
+        pliku dostępny byłby tylko tryb "Update on Save" (od razu przy zapisie).
+        Magento sam tworzy tabelę changelog (training_greeting_cl) i triggery na
+        INSERT/UPDATE/DELETE dla training_greeting.
+    -->
+    <view id="training_greeting_count" class="Training\Greeting\Model\Indexer\GreetingCountIndexer" group="indexer">
+        <subscriptions>
+            <table name="training_greeting" entity_column="product_id"/>
+        </subscriptions>
+    </view>
+</config>

@@ -5,8 +5,24 @@
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="message" nullable="false" length="255" comment="Message"/>
         <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="int" name="product_id" padding="10" unsigned="true" nullable="true" comment="Product ID"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
+        </constraint>
+        <index referenceId="TRAINING_GREETING_PRODUCT_ID" indexType="btree">
+            <column name="product_id"/>
+        </index>
+    </table>
+    <!--
+        Tabela docelowa indeksera (Etap 4) — jeden wiersz na produkt, licznik
+        wpisów Greeting powiązanych z tym produktem. Budowana wyłącznie przez
+        Model/Indexer/GreetingCountIndexer, nigdy ręcznie.
+    -->
+    <table name="training_greeting_count" resource="default" engine="innodb" comment="Training Greeting Count Index">
+        <column xsi:type="int" name="product_id" padding="10" unsigned="true" nullable="false" comment="Product ID"/>
+        <column xsi:type="int" name="greeting_count" padding="10" unsigned="true" nullable="false" default="0" comment="Greeting Count"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="product_id"/>
         </constraint>
     </table>
 </schema>

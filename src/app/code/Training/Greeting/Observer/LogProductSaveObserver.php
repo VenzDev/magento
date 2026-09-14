@@ -26,6 +26,10 @@ class LogProductSaveObserver implements ObserverInterface
         $greeting = $this->greetingFactory->create();
         $greeting->setMessage("Zapisano produkt: {$product->getSku()}")
             ->setCreatedAt((new \DateTime())->format('Y-m-d H:i:s'));
+        // product_id nie jest (jeszcze) częścią GreetingInterface — dopisany
+        // w Etapie 4 tylko po to, żeby indekser miał po czym grupować. Docelowo
+        // "poprawnie" byłoby dodać getProductId()/setProductId() do interfejsu.
+        $greeting->setData('product_id', $product->getId());
         $this->greetingRepository->save($greeting);
     }
 }
