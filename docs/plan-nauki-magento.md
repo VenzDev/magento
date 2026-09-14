@@ -79,9 +79,7 @@ Service Contract (Interface + Repository + Data Interface).
 
 ## Etap 3 — Katalog, EAV i repozytoria
 
-**Cel:** zrozumieć model EAV, indeksowanie i pułapki `ProductRepositoryInterface`
-(patrz też Twoja notatka w pamięci: `getList` domyślnie filtruje po stanie
-magazynowym/indeksie).
+**Cel:** zrozumieć model EAV, indeksowanie i pułapki `ProductRepositoryInterface`.
 
 **Zadanie:**
 - Napisz `Setup\Patch\Data` (declarative data patch), który tworzy nowy atrybut
@@ -91,8 +89,13 @@ magazynowym/indeksie).
 - Komenda CLI `bin/magento training:products:tag`, która przez
   `ProductRepositoryInterface` + `SearchCriteriaBuilder` znajduje produkty spełniające
   warunek (np. cena > X) i ustawia im atrybut `training_badge`.
-- Sprawdź świadomie: czy Twoja komenda widzi produkt, który jest `disabled` albo ma
-  `qty=0`? Dlaczego (albo dlaczego nie)?
+- Sprawdź świadomie (empirycznie, nie z dokumentacji!): czy Twoja komenda widzi
+  produkt, który jest `disabled` albo ma `qty=0`? **Zweryfikowane 2026-09-14 na tej
+  instalacji Magento 2.4.9: TAK, widzi oba** — `getList()` nie filtruje po
+  statusie ani stanie magazynowym, wbrew powszechnemu przekonaniu (i wbrew temu,
+  co wcześniej mylnie mówiła notatka w pamięci projektu — patrz
+  `CLAUDE.md` sekcja "Konwencje projektu"). Jeśli chcesz to wykluczyć, musisz dodać
+  filtr jawnie.
 
 **Kryteria odbioru:**
 - Atrybut widoczny w adminie i filtrowalny na froncie (po reindexie).

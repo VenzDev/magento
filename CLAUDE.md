@@ -43,9 +43,13 @@ plikiem, kiedy pomagasz z zadaniami.
 - Nowa kategoria przez `CategoryRepository`: `setPath($parent->getPath() . '/')`
   **z końcowym slashem** — bez niego resource model nie dopisuje nowego ID i usunięcie
   kategorii kaskadowo kasuje rodzica.
-- `ProductRepositoryInterface::getList()` domyślnie zwraca tylko produkty
-  in-stock i zaindeksowane — jeśli produkt "znika" z wyników, sprawdź to najpierw
-  zanim zaczniesz debugować SearchCriteria.
+- `ProductRepositoryInterface::getList()` **NIE filtruje** domyślnie po statusie
+  (disabled) ani po stanie magazynowym (qty=0/out-of-stock) — zweryfikowane
+  empirycznie 2026-09-14 na tej instalacji (Magento 2.4.9). `joinAttribute('status'/
+  'visibility', ..., 'inner')` w jego implementacji tylko gwarantuje, że te kolumny
+  są wypełnione, nie filtruje po ich wartości. Jeśli chcesz wykluczyć
+  disabled/out-of-stock, dodaj filtr jawnie do `SearchCriteria` — nie zakładaj, że
+  repository zrobi to za Ciebie.
 
 ## Częste komendy
 
