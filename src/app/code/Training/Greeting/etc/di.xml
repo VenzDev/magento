@@ -4,4 +4,8 @@
     <preference for="Training\Greeting\Api\Data\GreetingInterface" type="Training\Greeting\Model\Greeting"/>
     <preference for="Training\Greeting\Api\GreetingRepositoryInterface" type="Training\Greeting\Model\GreetingRepository"/>
     <preference for="Training\Greeting\Api\GreetingSearchResultsInterface" type="Magento\Framework\Api\SearchResults"/>
+
+    <type name="Training\Greeting\Api\GreetingRepositoryInterface">
+        <plugin name="training_greeting_reindex_count" type="Training\Greeting\Plugin\ReindexGreetingCountPlugin"/>
+    </type>
 </config>

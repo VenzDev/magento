@@ -19,6 +19,13 @@ use Magento\Framework\Mview\ActionInterface as MviewActionInterface;
  */
 class GreetingCountIndexer implements IndexerActionInterface, MviewActionInterface
 {
+    /**
+     * Musi się zgadzać z id w etc/indexer.xml — używane przez
+     * Plugin\ReindexGreetingCountPlugin do pobrania tego indeksera z
+     * IndexerRegistry.
+     */
+    public const INDEXER_ID = 'training_greeting_count';
+
     private const GREETING_TABLE = 'training_greeting';
     private const INDEX_TABLE = 'training_greeting_count';
 
