@@ -41,6 +41,17 @@ class GreetingCountIndexer implements IndexerActionInterface, MviewActionInterfa
      */
     public function executeFull(): void
     {
+        $connection = $this->resourceConnection->getConnection();
+        $indexTable = $this->resourceConnection->getTableName(self::INDEX_TABLE);
+        $connection->truncateTable($indexTable);
+
+        $select = $connection->select()
+            ->from($this->resourceConnection->getTableName(self::GREETING_TABLE), ['product_id'])
+            ->columns(['greeting_count' => new \Zend_Db_Expr('COUNT(*)')])
+            ->where('product_id IS NOT NULL')
+            ->group('product_id');
+
+        $connection->query($connection->insertFromSelect($select, $indexTable, ['product_id', 'greeting_count']));
     }
 
     /**
@@ -59,6 +70,26 @@ class GreetingCountIndexer implements IndexerActionInterface, MviewActionInterfa
      */
     public function executeList(array $ids): void
     {
+        $connection = $this->resourceConnection->getConnection();
+        $indexTable = $this->resourceConnection->getTableName(self::INDEX_TABLE);
+
+        foreach ($ids as $id) {
+            $select = $connection->select()
+                ->from($this->resourceConnection->getTableName(self::GREETING_TABLE), ['product_id'])
+                ->columns(['greeting_count' => new \Zend_Db_Expr('COUNT(*)')])
+                ->where('product_id IS NOT NULL')
+                ->where('product_id = ?', $id)
+                ->group('product_id');
+
+            $result = $connection->fetchRow($select);
+            $greetingCount = $result['greeting_count'] ?? 0;
+
+            $connection->insertOnDuplicate(
+                $indexTable,
+                ['product_id' => $id, 'greeting_count' => $greetingCount],
+                ['greeting_count']
+            );
+        }
     }
 
     /**
