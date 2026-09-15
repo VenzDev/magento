@@ -7,6 +7,11 @@
         </item>
     </argument>
     <settings>
+        <buttons>
+            <button name="back" class="Training\Greeting\Block\Adminhtml\Greeting\Edit\BackButton"/>
+            <button name="delete" class="Training\Greeting\Block\Adminhtml\Greeting\Edit\DeleteButton"/>
+            <button name="save" class="Training\Greeting\Block\Adminhtml\Greeting\Edit\SaveButton"/>
+        </buttons>
         <namespace>training_greeting_form</namespace>
         <dataScope>data</dataScope>
         <deps>

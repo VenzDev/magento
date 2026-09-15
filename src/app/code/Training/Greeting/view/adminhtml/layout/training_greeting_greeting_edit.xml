@@ -5,10 +5,5 @@
         <referenceContainer name="content">
             <uiComponent name="training_greeting_form"/>
         </referenceContainer>
-        <referenceContainer name="page.actions.toolbar">
-            <block class="Training\Greeting\Block\Adminhtml\Greeting\Edit\BackButton" name="back_button"/>
-            <block class="Training\Greeting\Block\Adminhtml\Greeting\Edit\DeleteButton" name="delete_button"/>
-            <block class="Training\Greeting\Block\Adminhtml\Greeting\Edit\SaveButton" name="save_button"/>
-        </referenceContainer>
     </body>
 </page>
