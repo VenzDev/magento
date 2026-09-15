@@ -13,11 +13,13 @@ use Training\Greeting\Api\Data\GreetingInterface;
 interface GreetingRepositoryInterface
 {
     /**
+     * @return GreetingInterface
      * @throws CouldNotSaveException
      */
     public function save(GreetingInterface $greeting): GreetingInterface;
 
     /**
+     * @return GreetingInterface
      * @throws NoSuchEntityException
      */
     public function getById(int $id): GreetingInterface;
@@ -37,11 +39,13 @@ interface GreetingRepositoryInterface
     public function getList(SearchCriteriaInterface $searchCriteria);
 
     /**
+     * @return bool
      * @throws CouldNotDeleteException
      */
     public function delete(GreetingInterface $greeting): bool;
 
     /**
+     * @return bool
      * @throws CouldNotDeleteException
      * @throws NoSuchEntityException
      */

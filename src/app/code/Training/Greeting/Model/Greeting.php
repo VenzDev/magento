@@ -41,4 +41,14 @@ class Greeting extends AbstractModel implements GreetingInterface
     {
         return $this->setData(self::CREATED_AT, $createdAt);
     }
+
+    public function getProductId(): int
+    {
+        return (int) $this->getData(self::PRODUCT_ID);
+    }
+
+    public function setProductId(int $productId): self
+    {
+        return $this->setData(self::PRODUCT_ID, $productId);
+    }
 }

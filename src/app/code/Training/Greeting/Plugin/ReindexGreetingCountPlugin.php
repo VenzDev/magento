@@ -30,7 +30,7 @@ class ReindexGreetingCountPlugin
         GreetingRepositoryInterface $subject,
         GreetingInterface $result
     ): GreetingInterface {
-        $productId = (int) $result->getData('product_id');
+        $productId = $result->getProductId();
 
         if (!$productId) {
             // 0 to sentinel "brak powiązanego produktu" (product_id jest

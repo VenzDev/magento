@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
+    <route url="/V1/training/greetings/:id" method="GET">
+        <service class="Training\Greeting\Api\GreetingRepositoryInterface" method="getById"/>
+        <resources>
+            <resource ref="Training_Greeting::greeting"/>
+        </resources>
+    </route>
+    <route url="/V1/training/greetings" method="GET">
+        <service class="Training\Greeting\Api\GreetingRepositoryInterface" method="getList"/>
+        <resources>
+            <resource ref="Training_Greeting::greeting"/>
+        </resources>
+    </route>
+    <route url="/V1/training/greetings" method="POST">
+        <service class="Training\Greeting\Api\GreetingRepositoryInterface" method="save"/>
+        <resources>
+            <resource ref="Training_Greeting::greeting_save"/>
+        </resources>
+    </route>
+    <route url="/V1/training/greetings/:id" method="DELETE">
+        <service class="Training\Greeting\Api\GreetingRepositoryInterface" method="deleteById"/>
+        <resources>
+            <resource ref="Training_Greeting::greeting_delete"/>
+        </resources>
+    </route>
+</routes>

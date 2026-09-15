@@ -1,0 +1,20 @@
+type Query {
+    trainingGreetings(
+        pageSize: Int = 20 @doc(description: "Ile wpisów na stronę.")
+        currentPage: Int = 1 @doc(description: "Numer strony, licząc od 1.")
+    ): TrainingGreetings
+        @resolver(class: "Training\\Greeting\\Model\\Resolver\\GreetingsResolver")
+        @doc(description: "Lista wpisów Training Greeting.")
+}
+
+type TrainingGreetings @doc(description: "Wynik zapytania o listę greetingów.") {
+    total_count: Int @doc(description: "Łączna liczba pasujących wpisów.")
+    items: [TrainingGreeting] @doc(description: "Wpisy na bieżącej stronie.")
+}
+
+type TrainingGreeting @doc(description: "Pojedynczy wpis Training Greeting.") {
+    entity_id: Int
+    message: String
+    product_id: Int
+    created_at: String
+}
