@@ -47,6 +47,11 @@ class GreetingActions extends Column
                     'title' => __('Delete "%1"', $item['message'] ?? ''),
                     'message' => __('Are you sure you want to delete this greeting?'),
                 ],
+                // Bez tego JS grida potraktuje href jak zwykły link (GET) —
+                // a Delete.php wymaga POST (HttpPostActionInterface), więc
+                // kliknięcie skończyłoby się 404, tak jak przy wklejeniu URL-a
+                // ręcznie w przeglądarkę.
+                'post' => true,
             ];
         }
 
