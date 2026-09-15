@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:MessageQueue/etc/consumer.xsd">
+    <consumer name="pimProductSyncConsumer"
+              queue="training.pim.product.sync.queue"
+              connection="amqp"
+              handler="Training\PimSync\Consumer\PimProductSyncConsumer::process"/>
+</config>

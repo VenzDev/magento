@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Training\PimSync\Api\Data\PimProductMessageInterface" type="Training\PimSync\Model\Data\PimProductMessage"/>
+
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="trainingPimSimulate" xsi:type="object">Training\PimSync\Console\Command\SimulateCommand</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!--
+        Osobny kanał logów (var/log/pim_sync.log) zamiast wspólnego system.log —
+        żeby dało się śledzić tylko ruch PIM-a, tak jak w Etapie 7.3 planu nauki.
+    -->
+    <virtualType name="Training\PimSync\Logger\Handler" type="Magento\Framework\Logger\Handler\Base">
+        <arguments>
+            <argument name="fileName" xsi:type="string">/var/log/pim_sync.log</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="Training\PimSync\Logger\Logger" type="Magento\Framework\Logger\Monolog">
+        <arguments>
+            <argument name="name" xsi:type="string">pimSyncLogger</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="system" xsi:type="object">Training\PimSync\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <type name="Training\PimSync\Consumer\PimProductSyncConsumer">
+        <arguments>
+            <argument name="logger" xsi:type="object">Training\PimSync\Logger\Logger</argument>
+        </arguments>
+    </type>
+</config>
