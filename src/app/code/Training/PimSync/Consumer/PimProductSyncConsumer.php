@@ -6,6 +6,7 @@ namespace Training\PimSync\Consumer;
 
 use Magento\Catalog\Api\Data\ProductInterfaceFactory;
 use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Catalog\Model\Product\Visibility;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\InventoryApi\Api\Data\SourceItemInterfaceFactory;
 use Magento\InventoryApi\Api\SourceItemsSaveInterface;
@@ -19,6 +20,10 @@ use Training\PimSync\Api\Data\PimProductMessageInterface;
  */
 class PimProductSyncConsumer
 {
+    private const DEFAULT_ATTRIBUTE_SET_ID = 4;
+    private const DEFAULT_WEBSITE_ID = 1;
+    private const DEFAULT_SOURCE_CODE = 'default';
+
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
         private readonly ProductInterfaceFactory $productFactory,
@@ -30,15 +35,7 @@ class PimProductSyncConsumer
 
     public function process(PimProductMessageInterface $message): void
     {
-        // TODO (Etap 7.2 pkt 5 — walidacja):
-        // Sprawdź $message->getSku()/getPrice()/getQty() i rzuć wyjątek (np.
-        // \InvalidArgumentException) dla danych, które nie mają sensu (pusty
-        // SKU, cena < 0, qty < 0) — ZANIM zaczniesz cokolwiek zapisywać.
-        // Po zaimplementowaniu: opublikuj celowo złą wiadomość
-        // (bin/magento training:pim:simulate --broken) i sprawdź w RabbitMQ
-        // Management UI (zakładka kolejki training.pim.product.sync.queue),
-        // co się z nią dzieje — wraca do kolejki (redelivery w pętli) czy
-        // znika? To odpowiedź na pytanie o acknowledgement z Etapu 7.1.
+        $this->validate($message);
 
         try {
             $product = $this->productRepository->get($message->getSku());
@@ -48,26 +45,61 @@ class PimProductSyncConsumer
             $isNew = true;
         }
 
-        // TODO (Etap 7.2 pkt 3 — logika synchronizacji):
-        // 1. Jeśli $isNew — ustaw minimalny komplet danych wymagany do
-        //    utworzenia prostego produktu: setSku($message->getSku()),
-        //    setName($message->getName()), setAttributeSetId(4) (Default —
-        //    ten sam ID co w Etapie 3), setTypeId('simple'),
-        //    setVisibility(4) (Catalog, Search), setWebsiteIds([1]).
-        //    Jeśli produkt już istnieje — zaktualizuj tylko name/status.
-        // 2. $product->setPrice($message->getPrice());
-        // 3. $product->setStatus($message->getStatus());
-        // 4. $this->productRepository->save($product);
-        // 5. Zaktualizuj stan magazynowy PRZEZ MSI (ten sklep ma włączone
-        //    Magento_InventoryApi — NIE używaj starego StockRegistryInterface):
-        //      $sourceItem = $this->sourceItemFactory->create();
-        //      $sourceItem->setSku($message->getSku());
-        //      $sourceItem->setSourceCode('default');
-        //      $sourceItem->setQuantity((float) $message->getQty());
-        //      $sourceItem->setStatus($message->getQty() > 0 ? 1 : 0);
-        //      $this->sourceItemsSave->execute([$sourceItem]);
-        // 6. Zaloguj wynik: $this->logger->info(...) — leci do osobnego pliku
-        //    var/log/pim_sync.log (kanał skonfigurowany w etc/di.xml), nie do
-        //    ogólnego system.log.
+        if ($isNew) {
+            $product->setSku($message->getSku());
+            $product->setAttributeSetId(self::DEFAULT_ATTRIBUTE_SET_ID);
+            $product->setTypeId('simple');
+            $product->setVisibility(Visibility::VISIBILITY_BOTH);
+            $product->setWebsiteIds([self::DEFAULT_WEBSITE_ID]);
+        }
+
+        $product->setName($message->getName());
+        $product->setPrice($message->getPrice());
+        $product->setStatus($message->getStatus());
+
+        $this->productRepository->save($product);
+
+        $sourceItem = $this->sourceItemFactory->create();
+        $sourceItem->setSku($message->getSku());
+        $sourceItem->setSourceCode(self::DEFAULT_SOURCE_CODE);
+        $sourceItem->setQuantity((float) $message->getQty());
+        $sourceItem->setStatus($message->getQty() > 0 ? 1 : 0);
+        $this->sourceItemsSave->execute([$sourceItem]);
+
+        $this->logger->info(sprintf(
+            '%s produkt sku=%s name="%s" price=%.2f qty=%d status=%d',
+            $isNew ? 'Utworzono' : 'Zaktualizowano',
+            $message->getSku(),
+            $message->getName(),
+            $message->getPrice(),
+            $message->getQty(),
+            $message->getStatus()
+        ));
+    }
+
+    /**
+     * @throws \InvalidArgumentException
+     */
+    private function validate(PimProductMessageInterface $message): void
+    {
+        if ($message->getSku() === '') {
+            throw new \InvalidArgumentException('PIM message has an empty SKU.');
+        }
+
+        if ($message->getPrice() < 0) {
+            throw new \InvalidArgumentException(sprintf(
+                'PIM message for sku=%s has a negative price (%.2f).',
+                $message->getSku(),
+                $message->getPrice()
+            ));
+        }
+
+        if ($message->getQty() < 0) {
+            throw new \InvalidArgumentException(sprintf(
+                'PIM message for sku=%s has a negative qty (%d).',
+                $message->getSku(),
+                $message->getQty()
+            ));
+        }
     }
 }

@@ -52,22 +52,29 @@ class SimulateCommand extends Command
     {
         $count = (int) $input->getOption('count');
 
-        // TODO:
-        // 1. W pętli $count razy zbuduj losową wiadomość przez
-        //    $this->messageFactory->create() i ustaw:
-        //    - setSku() — losowy z self::SKU_POOL (np. array_rand());
-        //    - setName() — cokolwiek sensownego, np. "PIM update {sku}";
-        //    - setPrice() — losowa liczba, np. rand(1000, 50000) / 100;
-        //    - setQty() — losowa liczba, np. rand(0, 100);
-        //    - setStatus() — 1 (enabled).
-        // 2. Opublikuj: $this->publisher->publish(self::TOPIC, $message).
-        // 3. Wypisz przez $output->writeln(...), co dokładnie wysłałeś
-        //    (SKU, cena, qty) — inaczej trudno będzie zweryfikować efekt.
-        //
-        // 4. Jeśli $input->getOption('broken') === true, opublikuj NA KOŃCU
-        //    dodatkową wiadomość z celowo złymi danymi (np. price = -10 albo
-        //    pusty sku = '') — to jest dane wejściowe do przetestowania
-        //    walidacji, którą dopiszesz w PimProductSyncConsumer::process().
+        foreach (range(1, $count) as $i) {
+            $message = $this->messageFactory->create();
+            $message->setSku(self::SKU_POOL[array_rand(self::SKU_POOL)]);
+            $message->setName("PIM update {$message->getSku()}");
+            $message->setPrice(rand(1000, 50000) / 100);
+            $message->setQty(rand(0, 100));
+            $message->setStatus(1);
+
+            $this->publisher->publish(self::TOPIC, $message);
+            $output->writeln("Published message with SKU {$message->getSku()}, price {$message->getPrice()}, qty {$message->getQty()}");
+        }
+
+        if ($input->getOption('broken')) {
+            $message = $this->messageFactory->create();
+            $message->setSku(self::SKU_POOL[array_rand(self::SKU_POOL)]);
+            $message->setName("PIM update {$message->getSku()}");
+            $message->setPrice(-10);
+            $message->setQty(rand(0, 100));
+            $message->setStatus(1);
+
+            $this->publisher->publish(self::TOPIC, $message);
+            $output->writeln("Published broken message with SKU {$message->getSku()}, price {$message->getPrice()}, qty {$message->getQty()}");
+        }
 
         $output->writeln(sprintf('Opublikowano %d wiadomości na topic %s.', $count, self::TOPIC));
 
