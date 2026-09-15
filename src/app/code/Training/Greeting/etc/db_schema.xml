@@ -5,7 +5,7 @@
         <column xsi:type="int" name="entity_id" padding="10" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
         <column xsi:type="varchar" name="message" nullable="false" length="255" comment="Message"/>
         <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
-        <column xsi:type="int" name="product_id" padding="10" unsigned="true" nullable="true" comment="Product ID"/>
+        <column xsi:type="int" name="product_id" padding="10" unsigned="true" nullable="false" default="0" comment="Product ID (0 = brak powiązanego produktu)"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>

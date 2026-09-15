@@ -30,9 +30,12 @@ class ReindexGreetingCountPlugin
         GreetingRepositoryInterface $subject,
         GreetingInterface $result
     ): GreetingInterface {
-        $productId = $result->getData('product_id');
+        $productId = (int) $result->getData('product_id');
 
-        if ($productId === null) {
+        if (!$productId) {
+            // 0 to sentinel "brak powiązanego produktu" (product_id jest
+            // NOT NULL DEFAULT 0 od backfillu — zob. Setup/Patch/Data/
+            // BackfillGreetingProductId.php) — nic nie indeksujemy.
             return $result;
         }
 

@@ -55,7 +55,7 @@ class GreetingCountIndexer implements IndexerActionInterface, MviewActionInterfa
         $select = $connection->select()
             ->from($this->resourceConnection->getTableName(self::GREETING_TABLE), ['product_id'])
             ->columns(['greeting_count' => new \Zend_Db_Expr('COUNT(*)')])
-            ->where('product_id IS NOT NULL')
+            ->where('product_id != 0')
             ->group('product_id');
 
         $connection->query($connection->insertFromSelect($select, $indexTable, ['product_id', 'greeting_count']));
@@ -81,10 +81,16 @@ class GreetingCountIndexer implements IndexerActionInterface, MviewActionInterfa
         $indexTable = $this->resourceConnection->getTableName(self::INDEX_TABLE);
 
         foreach ($ids as $id) {
+            if (!$id) {
+                // product_id=0 to sentinel "brak powiązanego produktu"
+                // (zob. db_schema.xml) — nie wpisujemy go do indeksu.
+                continue;
+            }
+
             $select = $connection->select()
                 ->from($this->resourceConnection->getTableName(self::GREETING_TABLE), ['product_id'])
                 ->columns(['greeting_count' => new \Zend_Db_Expr('COUNT(*)')])
-                ->where('product_id IS NOT NULL')
+                ->where('product_id != 0')
                 ->where('product_id = ?', $id)
                 ->group('product_id');
 

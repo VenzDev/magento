@@ -33,13 +33,11 @@ class Delete extends Action implements HttpPostActionInterface
             return $resultRedirect->setPath('*/*/');
         }
 
-        // TODO:
-        // 1. Wywołaj $this->greetingRepository->deleteById($id) w try/catch.
-        // 2. Sukces: $this->messageManager->addSuccessMessage(__('You deleted the greeting.'));
-        // 3. Błąd (np. CouldNotDeleteException): addErrorMessage z treścią wyjątku
-        //    i przekieruj z powrotem na edit tego ID zamiast na listę —
-        //    ($resultRedirect->setPath('*/*/edit', ['id' => $id])) — żeby
-        //    użytkownik zobaczył błąd w kontekście rekordu, którego dotyczył.
+        try {
+            $this->greetingRepository->deleteById($id);
+        } catch (\Exception $exception) {
+            $this->messageManager->addErrorMessage($exception->getMessage());
+        }
 
         return $resultRedirect->setPath('*/*/');
     }
