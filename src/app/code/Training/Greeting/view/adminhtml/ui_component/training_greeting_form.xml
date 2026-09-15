@@ -5,6 +5,8 @@
         <item name="js_config" xsi:type="array">
             <item name="provider" xsi:type="string">training_greeting_form.training_greeting_form_data_source</item>
         </item>
+        <item name="label" xsi:type="string" translate="true">General Information</item>
+        <item name="template" xsi:type="string">templates/form/collapsible</item>
     </argument>
     <settings>
         <buttons>
