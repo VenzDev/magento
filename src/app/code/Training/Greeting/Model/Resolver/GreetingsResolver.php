@@ -39,29 +39,27 @@ class GreetingsResolver implements ResolverInterface
         ?array $value = null,
         ?array $args = null
     ) {
-        // TODO:
-        // 1. Zbuduj SearchCriteria z paginacją:
-        //    $this->searchCriteriaBuilder
-        //        ->setPageSize((int) ($args['pageSize'] ?? 20))
-        //        ->setCurrentPage((int) ($args['currentPage'] ?? 1))
-        //        ->create();
-        // 2. Pobierz wynik: $this->greetingRepository->getList($searchCriteria).
-        // 3. Zmapuj każdy item (obiekt GreetingInterface) na zwykłą tablicę
-        //    asocjacyjną pasującą do pól typu TrainingGreeting ze
-        //    schema.graphqls — GraphQL w Magento NIE akceptuje obiektów PHP,
-        //    tylko tablice/skalary. Przykład dla jednego itemu:
-        //    [
-        //        'entity_id' => $item->getId(),
-        //        'message' => $item->getMessage(),
-        //        'product_id' => $item->getProductId(),
-        //        'created_at' => $item->getCreatedAt(),
-        //    ]
-        // 4. Zwróć:
-        //    [
-        //        'total_count' => $searchResult->getTotalCount(),
-        //        'items' => $mappedItems,
-        //    ]
 
-        throw new GraphQlInputException(__('Not implemented yet — dokończ GreetingsResolver::resolve().'));
+        $searchCriteria = $this->searchCriteriaBuilder
+            ->setPageSize((int) ($args['pageSize'] ?? 20))
+            ->setCurrentPage((int) ($args['currentPage'] ?? 1))
+            ->create();
+
+        $greetings = $this->greetingRepository->getList($searchCriteria);
+
+        $mappedItems = [];
+        foreach ($greetings->getItems() as $item) {
+            $mappedItems[] = [
+                'entity_id' => $item->getId(),
+                'message' => $item->getMessage(),
+                'product_id' => $item->getProductId(),
+                'created_at' => $item->getCreatedAt(),
+            ];
+        }
+
+        return [
+            'total_count' => $greetings->getTotalCount(),
+            'items' => $mappedItems,
+        ];
     }
 }
