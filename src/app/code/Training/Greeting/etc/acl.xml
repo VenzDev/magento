@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+    <acl>
+        <resources>
+            <resource id="Magento_Backend::admin">
+                <resource id="Training_Greeting::greeting" title="Training Greetings" translate="title" sortOrder="100">
+                    <resource id="Training_Greeting::greeting_save" title="Save Greeting" translate="title" sortOrder="10"/>
+                    <resource id="Training_Greeting::greeting_delete" title="Delete Greeting" translate="title" sortOrder="20"/>
+                </resource>
+            </resource>
+        </resources>
+    </acl>
+</config>

@@ -8,4 +8,18 @@
     <type name="Training\Greeting\Api\GreetingRepositoryInterface">
         <plugin name="training_greeting_reindex_count" type="Training\Greeting\Plugin\ReindexGreetingCountPlugin"/>
     </type>
+
+    <!--
+        Rejestracja kolekcji gridowej pod nazwą data source'a z listing.xml.
+        Generyczna klasa Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider
+        (użyta w listing.xml jako "class") sama nie wie nic o naszej encji —
+        znajduje właściwą kolekcję właśnie po tym mapowaniu nazwa -> klasa.
+    -->
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="training_greeting_listing_data_source" xsi:type="string">Training\Greeting\Model\ResourceModel\Greeting\Grid\Collection</item>
+            </argument>
+        </arguments>
+    </type>
 </config>

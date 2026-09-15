@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Training_Greeting::top_level" title="Training" translate="title" module="Training_Greeting"
+             sortOrder="100" resource="Training_Greeting::greeting"/>
+        <add id="Training_Greeting::greeting" title="Greetings" translate="title" module="Training_Greeting"
+             sortOrder="10" parent="Training_Greeting::top_level" action="training_greeting/greeting/index"
+             resource="Training_Greeting::greeting"/>
+    </menu>
+</config>
