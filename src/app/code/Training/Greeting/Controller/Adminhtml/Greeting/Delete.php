@@ -35,10 +35,13 @@ class Delete extends Action implements HttpPostActionInterface
 
         try {
             $this->greetingRepository->deleteById($id);
+            $this->messageManager->addSuccessMessage(__('You deleted the greeting.'));
+
+            return $resultRedirect->setPath('*/*/');
         } catch (\Exception $exception) {
             $this->messageManager->addErrorMessage($exception->getMessage());
-        }
 
-        return $resultRedirect->setPath('*/*/');
+            return $resultRedirect->setPath('*/*/edit', ['id' => $id]);
+        }
     }
 }
