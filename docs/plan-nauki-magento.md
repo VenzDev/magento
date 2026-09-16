@@ -351,25 +351,32 @@ Professional, wcześniej niepokryty w tym planie (patrz
 `docs/adobe-commerce-developer-professional-gap-analysis.md`).
 
 **Zadanie:** rozbudowano `Training_Greeting` o cykliczne czyszczenie starych
-wpisów z `training_greeting` (szkielet już wygenerowany, logika do
-dopisania):
+wpisów z `training_greeting`:
 - `etc/crontab.xml` — job `training_greeting_cleanup` w grupie `default`,
   harmonogram raz dziennie o 3:00 (`0 3 * * *`), wskazujący na
   `Training\Greeting\Cron\CleanupOldGreetings::execute`.
-- `Cron/CleanupOldGreetings.php` — TODO: usuń wpisy starsze niż N dni
-  (liczba dni z konfiguracji), zaloguj liczbę usuniętych wierszy.
+- `Cron/CleanupOldGreetings.php` — **logika napisana i zweryfikowana
+  empirycznie** (wywołanie `execute()` bezpośrednio przez bootstrap
+  Magento, na realnych danych w `training_greeting`). Po drodze złapany i
+  naprawiony realny bug: `retention_days <= 0` musi być jawnie
+  zablokowane, bo `retention_days = 0` liczyło próg jako "teraz" i kasowało
+  całą tabelę (`< 0` zamiast `<= 0` w pierwszej wersji). Próg czasowy liczony
+  jawnie w UTC (`created_at` w DB to timestamp w UTC, nie w strefie
+  serwera PHP).
 - `etc/adminhtml/system.xml` + `etc/config.xml` — pole "Retention (days)"
   w Stores > Configuration > Training Greeting > General, domyślnie 30,
   konfigurowalne per store/website (scope!).
 
 **Kryteria odbioru:**
-- `bin/magento cron:run` uruchamia job i widać wpis w `cron_schedule`
-  (`bin/mysql` → `SELECT * FROM cron_schedule WHERE job_code =
-  'training_greeting_cleanup' ORDER BY schedule_id DESC LIMIT 5;`) ze
-  statusem `success`.
-- Zmiana wartości retencji w adminie faktycznie wpływa na to, które wiersze
-  są usuwane (sprawdź na kilku ręcznie wstawionych wierszach ze starą datą
-  `created_at`).
+- ✅ **Zweryfikowane przez faktyczny scheduler** (nie tylko bezpośrednie
+  `execute()`): wpis w `cron_schedule` przechodzi przez `bin/magento
+  cron:run --group="default"` ze statusem `success`. Po drodze złapany
+  efekt uboczny testowania: config cache (`config: 1`) trzyma starą
+  wartość configu do jawnego `bin/magento cache:flush config` — usunięcie
+  wiersza z `core_config_data` samo w sobie nie unieważnia cache'u.
+- ✅ Zmiana wartości retencji faktycznie wpływa na to, które wiersze są
+  usuwane — potwierdzone na dwóch ręcznie wstawionych wierszach (40 dni i
+  1 dzień wstecz, retencja 30 dni): usunięty tylko starszy.
 - Umiesz wytłumaczyć różnicę między `schedule_generate_every` /
   `schedule_ahead_for` / `schedule_lifetime` / `history_cleanup_every`
   (domyślne ustawienia grupy `default` w core'owym `etc/config.xml`
