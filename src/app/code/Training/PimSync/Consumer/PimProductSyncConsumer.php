@@ -12,6 +12,7 @@ use Magento\InventoryApi\Api\Data\SourceItemInterfaceFactory;
 use Magento\InventoryApi\Api\SourceItemsSaveInterface;
 use Psr\Log\LoggerInterface;
 use Training\PimSync\Api\Data\PimProductMessageInterface;
+use Training\PimSync\Model\PimProductMessageValidator;
 
 /**
  * Odbiorca wiadomości z kolejki training.pim.product.sync.queue (patrz
@@ -29,13 +30,14 @@ class PimProductSyncConsumer
         private readonly ProductInterfaceFactory $productFactory,
         private readonly SourceItemsSaveInterface $sourceItemsSave,
         private readonly SourceItemInterfaceFactory $sourceItemFactory,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly PimProductMessageValidator $validator
     ) {
     }
 
     public function process(PimProductMessageInterface $message): void
     {
-        $this->validate($message);
+        $this->validator->validate($message);
 
         try {
             $product = $this->productRepository->get($message->getSku());
@@ -75,31 +77,5 @@ class PimProductSyncConsumer
             $message->getQty(),
             $message->getStatus()
         ));
-    }
-
-    /**
-     * @throws \InvalidArgumentException
-     */
-    private function validate(PimProductMessageInterface $message): void
-    {
-        if ($message->getSku() === '') {
-            throw new \InvalidArgumentException('PIM message has an empty SKU.');
-        }
-
-        if ($message->getPrice() < 0) {
-            throw new \InvalidArgumentException(sprintf(
-                'PIM message for sku=%s has a negative price (%.2f).',
-                $message->getSku(),
-                $message->getPrice()
-            ));
-        }
-
-        if ($message->getQty() < 0) {
-            throw new \InvalidArgumentException(sprintf(
-                'PIM message for sku=%s has a negative qty (%d).',
-                $message->getSku(),
-                $message->getQty()
-            ));
-        }
     }
 }
