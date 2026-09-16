@@ -389,6 +389,58 @@ wpisów z `training_greeting`:
 
 ---
 
+## Etap 12 — Lokalizacja / i18n (dodatek pod certyfikację AD0-E724)
+
+**Cel:** zrozumieć mechanizm tłumaczeń Magento — `__()` w PHP i szablonach,
+pliki `i18n/<locale>.csv`, CLI `i18n:collect-phrases`, konfigurację locale
+per store view (`general/locale/code`) oraz formatowanie dat zależne od
+locale (`TimezoneInterface`) — temat pokrywany w sekcji "Architecture"
+egzaminu Adobe Commerce Developer Professional, dotąd niepokryty w tym
+planie (patrz `docs/adobe-commerce-developer-professional-gap-analysis.md`).
+
+**Szkielet już wygenerowany** w `Training_HelloWorld`:
+- `Block/Greeting.php` — wstrzyknięty `TimezoneInterface`, `getGreeting()` i
+  `getCurrentDate()` zostawione z `// TODO` (string niewowinięty w `__()`,
+  data liczona gołym `DateTime::format()` zamiast `formatDateTime()`).
+- `view/frontend/templates/greeting.phtml` — dodany statyczny label
+  "Current date" z `TODO` do owinięcia w `__()` bezpośrednio w szablonie.
+- Empirycznie sprawdzone: `/helloworld` renderuje się (200, DI działa) —
+  szkielet nie psuje strony, tylko nie tłumaczy jeszcze niczego.
+
+**Zadanie (do Ciebie):**
+1. Uzupełnij TODO w `Block/Greeting.php` i `greeting.phtml` — owiń stringi
+   w `__()`.
+2. Przepisz `getCurrentDate()` na `$this->timezone->formatDateTime(...)`.
+3. Uruchom `bin/magento i18n:collect-phrases -o dictionary.csv
+   app/code/Training/HelloWorld` i zobacz, jak Magento sam wyłapuje frazy
+   do przetłumaczenia z kodu.
+4. Stwórz `i18n/pl_PL.csv` w module (klucz = oryginalna fraza z `__()`,
+   wartość = tłumaczenie; format CSV bez nagłówka kolumn) z polskim
+   tłumaczeniem znalezionych fraz.
+5. Przełącz locale store view na `pl_PL` (`bin/magento config:set
+   general/locale/code pl_PL --scope=stores --scope-code=default` albo w
+   adminie: Stores > Configuration > General > Locale Options), zrób
+   `cache:flush`, i sprawdź `/helloworld` na froncie.
+6. (Stretch) Włącz "Translate Inline" (Stores > Configuration > Developer >
+   Translate Inline, wymaga trybu developer), zobacz jak edytuje się
+   tłumaczenia bezpośrednio z frontu — potem **koniecznie wyłącz z
+   powrotem** (zostawione włączone potrafi zepsuć cache/front).
+
+**Kryteria odbioru:**
+- `/helloworld` z locale `pl_PL` pokazuje polskie teksty z
+  `i18n/pl_PL.csv`; z locale `en_US` (albo dowolnym innym bez pliku CSV) —
+  oryginalne angielskie stringi jako fallback.
+- Data wyświetla się w formacie zależnym od locale (sprawdź wizualnie w
+  przeglądarce po zmianie locale, nie tylko czytając kod).
+- Umiesz wytłumaczyć, dlaczego `__()` owija string zamiast bezpośredniej
+  konkatenacji zmiennej w środku (podpowiedź: placeholdery `%1`/`%2` i
+  kolejność argumentów przy tłumaczeniu na język o innym szyku zdania).
+- Rozumiesz różnicę między plikiem `i18n/<locale>.csv` (tłumaczenia
+  modułu, deployowane z kodem) a "Translate Inline" (edycja zapisana w
+  bazie per scope, do szybkich poprawek, nie do produkcji).
+
+---
+
 ## Jak korzystać z tego planu z Claude Code
 
 - Rób jeden checkbox/etap na raz, commituj po zamknięciu etapu.
