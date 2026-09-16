@@ -1,0 +1,20 @@
+parameters:
+    level: 0
+    ignoreErrors:
+        -
+            # NewAction kontrolerów adminowych z wzorcem "forward do Edit" nie
+            # ma jawnego return — _forward() załatwia dispatch wewnętrznie.
+            # Dokładnie ten sam wzorzec występuje w core Magento, np.
+            # Magento\Cms\Controller\Adminhtml\Block\NewAction. Świadomy
+            # wyjątek, nie błąd do naprawienia w kodzie.
+            message: '#^Method Training\\Greeting\\Controller\\Adminhtml\\Greeting\\NewAction::execute\(\) should return .* but return statement is missing\.$#'
+            path: Training/Greeting/Controller/Adminhtml/Greeting/NewAction.php
+        -
+            # Test/Integration korzysta z Magento\TestFramework\* — klasy
+            # ładowane tylko przez bootstrap dev/tests/integration, poza
+            # normalnym autoloaderem, więc PHPStan (analizujący samo app/code)
+            # nie ma jak ich poznać. To fałszywy alarm, nie prawdziwy błąd —
+            # świadomie wykluczamy Test/Integration z analizy zamiast
+            # doklejać cały ciężki bootstrap testów integracyjnych do configu.
+            message: '#(unknown class Magento\\TestFramework|Attribute class Magento\\TestFramework)#'
+            path: */Test/Integration/*

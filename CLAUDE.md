@@ -50,6 +50,14 @@ plikiem, kiedy pomagasz z zadaniami.
   są wypełnione, nie filtruje po ich wartości. Jeśli chcesz wykluczyć
   disabled/out-of-stock, dodaj filtr jawnie do `SearchCriteria` — nie zakładaj, że
   repository zrobi to za Ciebie.
+- `phpstan.neon` leży w `src/app/code/phpstan.neon` (nie w `src/` root, mimo że
+  tam PHPStan normalnie by go auto-wykrył) — `src/` to nazwany wolumen Dockera
+  (`appdata` w `compose.yaml`), synchronizowany z hosta osobnym mechanizmem
+  (Mutagen), który **cache'uje reguły `.gitignore`** i nie widzi świeżo
+  odblokowanego pliku bez restartu środowiska. `app/code/` jest jedynym
+  fragmentem `src/`, który synchronizuje się natychmiast (stąd też tam trzymamy
+  cały kod modułów) — dlatego zawsze wołaj `bin/analyse -c app/code/phpstan.neon
+  <ścieżka>`, nie sam `bin/analyse <ścieżka>`.
 
 ## Częste komendy
 
@@ -66,7 +74,8 @@ bin/log [plik]                   # tail logów Magento
 bin/dev-test-run <typ>           # uruchom PHPUnit dla danego typu testów (np. unit, integration)
 bin/setup-integration-tests      # jednorazowy setup bazy pod testy integracyjne
 bin/phpcs / bin/phpcbf           # code style (Magento2 ruleset)
-bin/analyse <ścieżka>             # PHPStan
+bin/analyse -c app/code/phpstan.neon <ścieżka>  # PHPStan — -c wymagany, config leży
+                                                # w app/code/ (patrz niżej), nie w src/
 ```
 
 Po zmianie w `src/app/code/`: zwykle trzeba
