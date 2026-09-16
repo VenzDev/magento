@@ -50,6 +50,21 @@ class CleanupOldGreetings
      */
     public function execute(): void
     {
-        // TODO: patrz opis metody wyżej.
+        $retention = (int) $this->scopeConfig->getValue(self::XML_PATH_RETENTION_DAYS, ScopeInterface::SCOPE_STORE);
+
+        if ($retention <= 0) {
+            $this->logger->warning('Retention days must be greater than 0, skipping cleanup');
+            return;
+        }
+
+        $threshold = (new \DateTime('now', new \DateTimeZone('UTC')))
+            ->modify("-{$retention} days")
+            ->format('Y-m-d H:i:s');
+
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName(self::GREETING_TABLE);
+        $rows = $connection->delete($table, $connection->quoteInto('created_at < ?', $threshold));
+
+        $this->logger->info("Deleted {$rows} rows older than {$threshold}");
     }
 }
