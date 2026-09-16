@@ -1,0 +1,14 @@
+<?php
+/**
+ * @var \Magento\Framework\View\Element\Template $block
+ * Nowy szablon (nie nadpisanie istniejącego) dodany do kontenera "footer"
+ * przez Magento_Theme/layout/default.xml w tym theme. Etap 9, pkt 3 — prosty
+ * komponent JS oparty o RequireJS/jQuery widget (patrz web/js/greeting-counter.js).
+ */
+?>
+<div class="training-greeting-counter" data-mage-init='{"trainingGreetingCounter": {}}'>
+    <button type="button" class="action training-greeting-counter__button" data-role="button">
+        <?= $block->escapeHtml(__('Log a Greeting')) ?>
+    </button>
+    <span class="training-greeting-counter__count" data-role="count">0</span>
+</div>
