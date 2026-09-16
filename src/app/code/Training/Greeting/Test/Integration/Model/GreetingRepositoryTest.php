@@ -44,6 +44,12 @@ class GreetingRepositoryTest extends TestCase
      */
     public function testSaveCreatesNewGreeting(): void
     {
+        $greeting = $this->greetingFactory->create();
+        $greeting->setMessage('Hello');
+        $greeting->setCreatedAt((new \DateTime())->format('Y-m-d H:i:s'));
+
+        $saved = $this->repository->save($greeting);
+        $this->assertNotNull($saved->getId());
     }
 
     /**
@@ -54,6 +60,13 @@ class GreetingRepositoryTest extends TestCase
      */
     public function testGetByIdReturnsSavedGreeting(): void
     {
+        $greeting = $this->greetingFactory->create();
+        $greeting->setMessage('Hello');
+        $greeting->setCreatedAt((new \DateTime())->format('Y-m-d H:i:s'));
+
+        $saved = $this->repository->save($greeting);
+        $fetched = $this->repository->getById($saved->getId());
+        $this->assertEquals($greeting->getMessage(), $fetched->getMessage());
     }
 
     /**
@@ -63,6 +76,8 @@ class GreetingRepositoryTest extends TestCase
      */
     public function testGetByIdThrowsForMissingGreeting(): void
     {
+        $this->expectException(NoSuchEntityException::class);
+        $this->repository->getById(999999999);
     }
 
     /**
@@ -73,5 +88,13 @@ class GreetingRepositoryTest extends TestCase
      */
     public function testDeleteByIdRemovesGreeting(): void
     {
+        $greeting = $this->greetingFactory->create();
+        $greeting->setMessage('Hello');
+        $greeting->setCreatedAt((new \DateTime())->format('Y-m-d H:i:s'));
+
+        $saved = $this->repository->save($greeting);
+        $this->repository->deleteById($saved->getId());
+        $this->expectException(NoSuchEntityException::class);
+        $this->repository->getById($saved->getId());
     }
 }

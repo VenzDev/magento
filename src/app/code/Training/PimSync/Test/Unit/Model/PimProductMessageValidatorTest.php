@@ -34,6 +34,14 @@ class PimProductMessageValidatorTest extends TestCase
      */
     public function testValidMessagePassesValidation(): void
     {
+        $message = new PimProductMessage([]);
+        $message->setSku('test-sku');
+        $message->setPrice(10);
+        $message->setQty(10);
+
+        $this->validator->validate($message);
+
+        $this->expectNotToPerformAssertions();
     }
 
     /**
@@ -44,6 +52,11 @@ class PimProductMessageValidatorTest extends TestCase
      */
     public function testEmptySkuThrowsException(): void
     {
+        $message = new PimProductMessage([]);
+        $message->setSku('');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->validator->validate($message);
     }
 
     /**
@@ -54,6 +67,13 @@ class PimProductMessageValidatorTest extends TestCase
      */
     public function testNegativePriceThrowsException(): void
     {
+        $message = new PimProductMessage([]);
+        $message->setSku('test-sku');
+        $message->setPrice(-10);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('PIM message for sku=test-sku has a negative price (-10.00).');
+        $this->validator->validate($message);
     }
 
     /**
@@ -61,5 +81,12 @@ class PimProductMessageValidatorTest extends TestCase
      */
     public function testNegativeQtyThrowsException(): void
     {
+        $message = new PimProductMessage([]);
+        $message->setSku('test-sku');
+        $message->setQty(-5);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('PIM message for sku=test-sku has a negative qty (-5).');
+        $this->validator->validate($message);
     }
 }
