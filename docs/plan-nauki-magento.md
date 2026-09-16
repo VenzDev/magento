@@ -342,6 +342,46 @@ kilku wersji PHP, cache zależności (`actions/cache` na `~/.composer/cache`),
 
 ---
 
+## Etap 11 — Cron (dodatek pod certyfikację AD0-E724)
+
+**Cel:** zrozumieć architekturę Magento Cron — `crontab.xml`, tabelę
+`cron_schedule`, konfigurowalność przez system config i scope (store/website)
+— temat pokrywany w sekcji "Architecture" egzaminu Adobe Commerce Developer
+Professional, wcześniej niepokryty w tym planie (patrz
+`docs/adobe-commerce-developer-professional-gap-analysis.md`).
+
+**Zadanie:** rozbudowano `Training_Greeting` o cykliczne czyszczenie starych
+wpisów z `training_greeting` (szkielet już wygenerowany, logika do
+dopisania):
+- `etc/crontab.xml` — job `training_greeting_cleanup` w grupie `default`,
+  harmonogram raz dziennie o 3:00 (`0 3 * * *`), wskazujący na
+  `Training\Greeting\Cron\CleanupOldGreetings::execute`.
+- `Cron/CleanupOldGreetings.php` — TODO: usuń wpisy starsze niż N dni
+  (liczba dni z konfiguracji), zaloguj liczbę usuniętych wierszy.
+- `etc/adminhtml/system.xml` + `etc/config.xml` — pole "Retention (days)"
+  w Stores > Configuration > Training Greeting > General, domyślnie 30,
+  konfigurowalne per store/website (scope!).
+
+**Kryteria odbioru:**
+- `bin/magento cron:run` uruchamia job i widać wpis w `cron_schedule`
+  (`bin/mysql` → `SELECT * FROM cron_schedule WHERE job_code =
+  'training_greeting_cleanup' ORDER BY schedule_id DESC LIMIT 5;`) ze
+  statusem `success`.
+- Zmiana wartości retencji w adminie faktycznie wpływa na to, które wiersze
+  są usuwane (sprawdź na kilku ręcznie wstawionych wierszach ze starą datą
+  `created_at`).
+- Umiesz wytłumaczyć różnicę między `schedule_generate_every` /
+  `schedule_ahead_for` / `schedule_lifetime` / `history_cleanup_every`
+  (domyślne ustawienia grupy `default` w core'owym `etc/config.xml`
+  Magento_Cron) a tym, co by się zmieniło, gdybyś stworzył **własną grupę
+  cron** (`etc/cron_groups.xml`) zamiast używać `default`.
+- (Stretch, opcjonalnie) Stwórz własną grupę cron `training_group` w
+  `etc/cron_groups.xml`, z osobnym `use_separate_process`, i przenieś tam
+  job — zaobserwuj różnicę w generowaniu harmonogramu dla tej grupy
+  względem `default`.
+
+---
+
 ## Jak korzystać z tego planu z Claude Code
 
 - Rób jeden checkbox/etap na raz, commituj po zamknięciu etapu.
