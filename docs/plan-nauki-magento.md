@@ -427,11 +427,19 @@ planie (patrz `docs/adobe-commerce-developer-professional-gap-analysis.md`).
    powrotem** (zostawione włączone potrafi zepsuć cache/front).
 
 **Kryteria odbioru:**
-- `/helloworld` z locale `pl_PL` pokazuje polskie teksty z
-  `i18n/pl_PL.csv`; z locale `en_US` (albo dowolnym innym bez pliku CSV) —
-  oryginalne angielskie stringi jako fallback.
-- Data wyświetla się w formacie zależnym od locale (sprawdź wizualnie w
-  przeglądarce po zmianie locale, nie tylko czytając kod).
+- ✅ `/helloworld` z locale `pl_PL` pokazuje polskie teksty z
+  `i18n/pl_PL.csv` ("Witaj, Magento!" / "Aktualna data") — zweryfikowane
+  na żywo przez `bin/magento config:set general/locale/code pl_PL` +
+  `cache:flush` + render strony. Z powrotem na `en_US` (bez pliku CSV) —
+  fallback do oryginalnych angielskich stringów, też potwierdzone.
+  Uwaga: to był test na scope `default` (całe środowisko), nie na
+  konkretnym store view — jeśli chcesz przećwiczyć też
+  `--scope=stores --scope-code=default` i różnicę między poziomami scope,
+  to zostaje do zrobienia (wiąże się z przyszłym zadaniem "multi-store" z
+  analizy luk).
+- ✅ Data wyświetla się w formacie zależnym od locale — potwierdzone
+  wizualnie: `pl_PL` → "17 wrz 2026, 16:05", `en_US` → "Sep 17, 2026, 4:05
+  PM".
 - Umiesz wytłumaczyć, dlaczego `__()` owija string zamiast bezpośredniej
   konkatenacji zmiennej w środku (podpowiedź: placeholdery `%1`/`%2` i
   kolejność argumentów przy tłumaczeniu na język o innym szyku zdania).

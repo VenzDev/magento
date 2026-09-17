@@ -42,7 +42,7 @@ większości z "czystym" Magento, niezależnym od edycji.
 | CLI Magento/`bin/magento` | ✅ Etap 0, ciągle używane | solidnie |
 | **Cron** | ✅ Etap 11 | `etc/crontab.xml` (job w grupie `default`), konfigurowalność przez `system.xml`/`config.xml` (scope store/website), weryfikacja przez `cron_schedule` — zrobione i przetestowane empirycznie (złapany i naprawiony realny bug: `retention_days=0` kasowało całą tabelę). Nieprzećwiczone: własna grupa cron (`etc/cron_groups.xml`) i `lock provider` — zostawione jako stretch goal w Etapie 11 |
 | Indeksery (`update on save`/`schedule`, custom indexer) | ✅ Etap 4 | solidnie |
-| **Lokalizacja / i18n** | ✅ Etap 12 (szkielet gotowy, zadanie w toku) | `__()` w PHP/szablonach, `i18n/<locale>.csv`, `i18n:collect-phrases`, `TimezoneInterface` do formatowania dat per locale, przełączanie `general/locale/code` — szkielet w `Training_HelloWorld` wygenerowany i zweryfikowany (strona renderuje się, DI działa), właściwe tłumaczenia i test w przeglądarce do dokończenia przez użytkownika |
+| **Lokalizacja / i18n** | ✅ Etap 12 | `__()` w PHP/szablonach, `i18n/<locale>.csv`, `i18n:collect-phrases`, `TimezoneInterface` do formatowania dat per locale, przełączanie `general/locale/code` — pełny cykl zweryfikowany empirycznie w `Training_HelloWorld` (`pl_PL` → tłumaczenie + polski format daty, `en_US` → fallback). Nieprzećwiczone: `general/locale/code` na poziomie store view (nie tylko `default` scope) i "Translate Inline" (stretch goal w Etapie 12) |
 | Plugin / preference / observer | ✅ Etap 2 | solidnie, w tym `di.xml` |
 | **URL rewrites** | ❌ brak | **luka** — brak `UrlRewrite` (entity `custom`), `url_rewrite` table, generowania rewrite'ów dla produktu/kategorii, `NoRouteHandler` |
 | Cache (block cache, `cache:clean` vs `cache:flush`) | ⚠️ Etap 4, tylko cache blokowy | **luka częściowa** — brak Full Page Cache (Varnish/wbudowany FPC), brak `CacheableInterface`, tagów cache, `X-Magento-Cache-Debug` |
@@ -117,9 +117,10 @@ Cloud pipeline z `.magento.app.yaml`/`ece-tools`).
 1. ~~Cron~~ — **zrobione, Etap 11** (`etc/crontab.xml` + konfigurowalna
    retencja). Zostaje stretch goal: własna grupa cron
    (`etc/cron_groups.xml`) i `lock provider`.
-1b. ~~Lokalizacja / i18n~~ — **szkielet gotowy, Etap 12** (`__()`,
-   `TimezoneInterface`, `i18n:collect-phrases`) — dokończenie tłumaczeń i
-   testu w przeglądarce po stronie użytkownika.
+1b. ~~Lokalizacja / i18n~~ — **zrobione, Etap 12** (`__()`,
+   `TimezoneInterface`, `i18n:collect-phrases`, `i18n/pl_PL.csv`,
+   zweryfikowane end-to-end w przeglądarce). Zostaje stretch goal:
+   scope store view (nie tylko `default`) i "Translate Inline".
 2. Nowy etap/zadanie: **URL rewrites** — custom rewrite dla własnej
    encji/kontrolera, konflikt rewrite'ów, `NoRouteHandler`.
 3. Nowy etap/zadanie: **Multi-store/website** — drugi store view, różne
