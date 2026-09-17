@@ -3,10 +3,5 @@
 ?>
 <div class="training-helloworld-greeting">
     <h1><?= $block->escapeHtml($block->getGreeting()) ?></h1>
-    <!--
-        TODO (Etap 12 — i18n): owiń label "Current date" w __() bezpośrednio
-        w szablonie — globalna funkcja __() jest dostępna w każdym .phtml bez
-        importu, np. __('Current date').
-    -->
-    <p>Current date: <?= $block->escapeHtml($block->getCurrentDate()) ?></p>
+    <p><?= $block->escapeHtml(__('Current date')) ?>: <?= $block->escapeHtml($block->getCurrentDate()) ?></p>
 </div>
