@@ -449,6 +449,70 @@ planie (patrz `docs/adobe-commerce-developer-professional-gap-analysis.md`).
 
 ---
 
+## Etap 13 — URL rewrites (dodatek pod certyfikację AD0-E724)
+
+**Cel:** zrozumieć encję `url_rewrite` — tabelę, unique constraint
+`(request_path, store_id)`, różnicę między cichym rewrite (`redirect_type =
+0`, URL w pasku przeglądarki się nie zmienia) a przekierowaniem (301/302,
+`Location` w odpowiedzi), oraz `UrlPersistInterface` jako API do zapisu —
+temat pokrywany w sekcji "Architecture" egzaminu Adobe Commerce Developer
+Professional, dotąd niepokryty w tym planie (patrz
+`docs/adobe-commerce-developer-professional-gap-analysis.md`).
+
+**Szkielet już wygenerowany** w `Training_HelloWorld`:
+- `etc/module.xml` — dodana `<sequence>` na `Magento_UrlRewrite` (patch
+  używa jego `UrlPersistInterface`/`UrlRewriteFactory`).
+- `Setup/Patch/Data/AddHelloWorldUrlRewrites.php` — `DataPatchInterface`
+  ze wstrzykniętymi `UrlPersistInterface`, `UrlRewriteFactory`,
+  `StoreManagerInterface`; `apply()` zostawione z `// TODO` opisującym
+  dokładnie dwa wpisy do zbudowania.
+- ⚠️ **Zanim uruchomisz `bin/magento setup:upgrade` — najpierw uzupełnij
+  TODO w `apply()`.** Declarative data patch jest oznaczany jako
+  "zastosowany" w tabeli `patch_list` niezależnie od tego, czy coś w
+  środku faktycznie zrobił — jeśli odpalisz `setup:upgrade` z pustym
+  `apply()`, kolejne uruchomienia go pominą, mimo że dopiszesz logikę
+  później. Ratunek: `DELETE FROM patch_list WHERE patch_name LIKE
+  '%AddHelloWorldUrlRewrites%'` i `setup:upgrade` jeszcze raz.
+
+**Zadanie (do Ciebie):**
+1. Uzupełnij `apply()`: wpis `witaj → helloworld` (cichy, `redirect_type =
+   0`) i wpis `stare-hello → helloworld` (przekierowanie 301,
+   `OptionProvider::PERMANENT`), oba `entity_type = 'custom'`,
+   `entity_id = 0`, `store_id` z `StoreManagerInterface::getStore()->getId()`.
+2. `bin/magento setup:upgrade`, potem sprawdź w bazie
+   (`SELECT * FROM url_rewrite WHERE entity_type = 'custom';`), że oba
+   wiersze faktycznie tam są.
+3. `curl -I` na `/witaj` — powinno zwrócić `200`, bez `Location`, i ten
+   sam content co `/helloworld`. `curl -I` na `/stare-hello` — powinno
+   zwrócić `301` z nagłówkiem `Location: .../helloworld`.
+4. Celowo spróbuj dodać (ręcznie, przez tymczasowy kod albo drugi patch)
+   trzeci rewrite z tym samym `request_path` i `store_id` co któryś z
+   powyższych — złap `UrlAlreadyExistsException` z
+   `UrlPersistInterface::replace()` i zrozum, skąd się bierze (unique
+   constraint `URL_REWRITE_REQUEST_PATH_STORE_ID`).
+5. (Katalog) Zmień URL key istniejącego produktu w adminie (Catalog >
+   Products) i sprawdź w `url_rewrite`, czy stary URL dostał automatycznie
+   wygenerowany rewrite z przekierowaniem do nowego — zależy od opcji
+   "Create Permanent Redirect for old URL" w Stores > Configuration >
+   Catalog > Catalog > Search Engine Optimization.
+6. Wejdź na kompletnie nieistniejący URL (np. `/this-does-not-exist`) i
+   zobacz stronę 404 — to `NoRouteHandler`, konfigurowalny w Stores >
+   Configuration > General > Web > Default Pages > CMS No Route Page.
+
+**Kryteria odbioru:**
+- `/witaj` renderuje dokładnie to co `/helloworld`, `200`, URL w pasku
+  przeglądarki zostaje `/witaj`.
+- `/stare-hello` zwraca `301` z poprawnym `Location`.
+- Umiesz wytłumaczyć różnicę między rewrite'em custom (Twój, ręcznie
+  wpisany) a autogenerowanym rewrite'em produktu/kategorii — kto go
+  tworzy i kiedy jest przeliczany (save encji, nie indeksowanie na
+  żądanie).
+- Rozumiesz, dlaczego dwa rewrite'y nie mogą mieć tego samego
+  `request_path` na tym samym `store_id`, i co dokładnie robi
+  `UrlPersistInterface::replace()` gdy trafi na taki konflikt.
+
+---
+
 ## Jak korzystać z tego planu z Claude Code
 
 - Rób jeden checkbox/etap na raz, commituj po zamknięciu etapu.

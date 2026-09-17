@@ -44,7 +44,7 @@ większości z "czystym" Magento, niezależnym od edycji.
 | Indeksery (`update on save`/`schedule`, custom indexer) | ✅ Etap 4 | solidnie |
 | **Lokalizacja / i18n** | ✅ Etap 12 | `__()` w PHP/szablonach, `i18n/<locale>.csv`, `i18n:collect-phrases`, `TimezoneInterface` do formatowania dat per locale, przełączanie `general/locale/code` — pełny cykl zweryfikowany empirycznie w `Training_HelloWorld` (`pl_PL` → tłumaczenie + polski format daty, `en_US` → fallback). Nieprzećwiczone: `general/locale/code` na poziomie store view (nie tylko `default` scope) i "Translate Inline" (stretch goal w Etapie 12) |
 | Plugin / preference / observer | ✅ Etap 2 | solidnie, w tym `di.xml` |
-| **URL rewrites** | ❌ brak | **luka** — brak `UrlRewrite` (entity `custom`), `url_rewrite` table, generowania rewrite'ów dla produktu/kategorii, `NoRouteHandler` |
+| **URL rewrites** | ⚠️ Etap 13 (szkielet gotowy, zadanie w toku) | `UrlPersistInterface`/`UrlRewriteFactory`, `url_rewrite` (entity `custom`, unique constraint request_path+store_id, redirect_type 0/301), `NoRouteHandler` — szkielet (data patch) w `Training_HelloWorld` wygenerowany, wypełnienie TODO i test w przeglądarce (`/witaj`, `/stare-hello`) do dokończenia przez użytkownika |
 | Cache (block cache, `cache:clean` vs `cache:flush`) | ⚠️ Etap 4, tylko cache blokowy | **luka częściowa** — brak Full Page Cache (Varnish/wbudowany FPC), brak `CacheableInterface`, tagów cache, `X-Magento-Cache-Debug` |
 | **Stores / websites / store views** | ❌ brak | **luka** — cały plan działa na jednym store view; brak zadania o scope resolution (`ScopeInterface`, website-level config, per-store-view różne ceny/atrybuty), przełączaniu store code w URL |
 | Architektura panelu admina (ACL, menu, UI Components) | ✅ Etap 5 | solidnie |
@@ -121,8 +121,9 @@ Cloud pipeline z `.magento.app.yaml`/`ece-tools`).
    `TimezoneInterface`, `i18n:collect-phrases`, `i18n/pl_PL.csv`,
    zweryfikowane end-to-end w przeglądarce). Zostaje stretch goal:
    scope store view (nie tylko `default`) i "Translate Inline".
-2. Nowy etap/zadanie: **URL rewrites** — custom rewrite dla własnej
-   encji/kontrolera, konflikt rewrite'ów, `NoRouteHandler`.
+2. ~~URL rewrites~~ — **szkielet gotowy, Etap 13** (`UrlPersistInterface`,
+   data patch z cichym rewrite + przekierowaniem 301) — dokończenie TODO i
+   testu w przeglądarce po stronie użytkownika.
 3. Nowy etap/zadanie: **Multi-store/website** — drugi store view, różne
    ceny/atrybuty per scope, przełączanie `?___store=`.
 4. Rozszerzenie Etapu 3: **attribute sets** (tworzenie/klonowanie),
