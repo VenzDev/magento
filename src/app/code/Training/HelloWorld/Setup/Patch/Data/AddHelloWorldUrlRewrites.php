@@ -12,41 +12,37 @@ use Magento\UrlRewrite\Model\UrlPersistInterface;
 use Magento\UrlRewrite\Service\V1\Data\UrlRewriteFactory;
 
 /**
- * Etap 13 (URL rewrites) — TODO w apply():
+ * Etap 13 (URL rewrites) — dopisuje dwa ręczne wpisy (entity_type="custom")
+ * do tabeli url_rewrite, oba celujące w kontroler /helloworld:
+ * - "witaj" — cichy rewrite (redirect_type=0): URL w pasku przeglądarki
+ *   zostaje /witaj, odpowiedź to zwykłe 200.
+ * - "stare-hello" — przekierowanie 301: przeglądarka dostaje Location i
+ *   sama idzie na /helloworld.
  *
- * Zbuduj dwa obiekty UrlRewrite przez $this->urlRewriteFactory->create() i
- * zapisz je razem przez $this->urlPersist->replace([$rewrite1, $rewrite2]):
+ * Patch jest jednorazowy (odnotowany w patch_list po setup:upgrade), więc
+ * zmiana tych wpisów później wymaga albo nowego patcha, albo usunięcia
+ * wiersza z patch_list i ponownego setup:upgrade.
  *
- * 1. "Cichy" rewrite (bez przekierowania — URL w pasku przeglądarki się nie
- *    zmienia, tylko routing pod spodem trafia gdzie indziej):
- *    request_path='witaj', target_path='helloworld', entity_type='custom',
- *    entity_id=0, redirect_type=0,
- *    store_id=$this->storeManager->getStore()->getId().
- * 2. Przekierowanie 301: request_path='stare-hello', target_path='helloworld',
- *    entity_type='custom', entity_id=0,
- *    redirect_type=OptionProvider::PERMANENT, ten sam store_id co wyżej.
- *
- * Setery na UrlRewrite (Magento\UrlRewrite\Service\V1\Data\UrlRewrite) to
- * fluent API: ->setEntityType(...)->setEntityId(...)->setRequestPath(...)
- * ->setTargetPath(...)->setRedirectType(...)->setStoreId(...).
- *
- * WAŻNE zanim uruchomisz `bin/magento setup:upgrade`: dopóki apply() jest
- * pustą metodą (TODO), setup:upgrade i tak oznaczy ten patch jako "już
- * zastosowany" w tabeli patch_list — bo Magento nie wie, że w środku nic
- * się nie wykonało. Jeśli teraz odpalisz setup:upgrade, a dopiero potem
- * uzupełnisz TODO, kolejne setup:upgrade GO POMINIE (bo jest już w
- * patch_list) i Twoja logika nigdy się nie wykona. Najpierw uzupełnij TODO,
- * dopiero potem `bin/magento setup:upgrade`. Jeśli już się pomyliłeś:
- * `DELETE FROM patch_list WHERE patch_name LIKE '%AddHelloWorldUrlRewrites%'`
- * i uruchom setup:upgrade jeszcze raz.
- *
- * Do przemyślenia (nie musisz kodować): co się stanie, jeśli spróbujesz
- * zapisać drugi rewrite z takim samym request_path+store_id jak istniejący?
- * (unique constraint URL_REWRITE_REQUEST_PATH_STORE_ID w tabeli
- * url_rewrite) — sprawdź jaki wyjątek rzuca UrlPersistInterface::replace().
+ * Oba wpisy MUSZĄ lecieć w jednym replace(), bo dzielą tę samą tożsamość
+ * encji (entity_type + entity_id + store_id). replace() najpierw kasuje
+ * wszystkie rewrite'y danej encji, a potem wstawia to, co dostał — więc
+ * osobne replace([$silent]) skasowałoby po cichu "stare-hello"
+ * (zweryfikowane empirycznie). Konflikt rzuca UrlAlreadyExistsException
+ * dopiero wtedy, gdy o ten sam request_path+store_id bije się INNA encja.
  */
 class AddHelloWorldUrlRewrites implements DataPatchInterface
 {
+    private const ENTITY_TYPE = 'custom';
+
+    /**
+     * Celowo sam frontName, nie pełne "helloworld/index/index" (choć oba
+     * poprawnie routują do tego samego kontrolera przez domyślne
+     * index/index). Przy redirect_type != 0 Magento wstawia target_path
+     * wprost w nagłówek Location, więc pełna ścieżka wyciekłaby userowi i
+     * to ona zostałaby w pasku przeglądarki.
+     */
+    private const TARGET_PATH = 'helloworld';
+
     public function __construct(
         private readonly ModuleDataSetupInterface $moduleDataSetup,
         private readonly UrlPersistInterface $urlPersist,
@@ -59,7 +55,25 @@ class AddHelloWorldUrlRewrites implements DataPatchInterface
     {
         $this->moduleDataSetup->getConnection()->startSetup();
 
-        // TODO: patrz opis klasy wyżej.
+        $storeId = (int) $this->storeManager->getStore()->getId();
+
+        $silent = $this->urlRewriteFactory->create();
+        $silent->setEntityType(self::ENTITY_TYPE)
+            ->setEntityId(0)
+            ->setRequestPath('witaj')
+            ->setTargetPath(self::TARGET_PATH)
+            ->setRedirectType(0)
+            ->setStoreId($storeId);
+
+        $permanent = $this->urlRewriteFactory->create();
+        $permanent->setEntityType(self::ENTITY_TYPE)
+            ->setEntityId(0)
+            ->setRequestPath('stare-hello')
+            ->setTargetPath(self::TARGET_PATH)
+            ->setRedirectType(OptionProvider::PERMANENT)
+            ->setStoreId($storeId);
+
+        $this->urlPersist->replace([$silent, $permanent]);
 
         $this->moduleDataSetup->getConnection()->endSetup();
     }
