@@ -45,7 +45,7 @@ większości z "czystym" Magento, niezależnym od edycji.
 | **Lokalizacja / i18n** | ✅ Etap 12 | `__()` w PHP/szablonach, `i18n/<locale>.csv`, `i18n:collect-phrases`, `TimezoneInterface` do formatowania dat per locale, przełączanie `general/locale/code` — pełny cykl zweryfikowany empirycznie w `Training_HelloWorld` (`pl_PL` → tłumaczenie + polski format daty, `en_US` → fallback). Nieprzećwiczone: `general/locale/code` na poziomie store view (nie tylko `default` scope) i "Translate Inline" (stretch goal w Etapie 12) |
 | Plugin / preference / observer | ✅ Etap 2 | solidnie, w tym `di.xml` |
 | **URL rewrites** | ✅ Etap 13 | `UrlPersistInterface`/`UrlRewriteFactory`, `url_rewrite` (entity `custom`, unique constraint request_path+store_id, redirect_type 0 vs 301), `NoRouteHandler` — data patch w `Training_HelloWorld` zweryfikowany end-to-end (`/witaj` → 200 cicho, `/stare-hello` → 301, `/nieistniejace` → 404). Nieprzećwiczone: autogenerowane rewrite'y katalogu przy zmianie URL key produktu |
-| Cache (block cache, `cache:clean` vs `cache:flush`) | ⚠️ Etap 4, tylko cache blokowy | **luka częściowa** — brak Full Page Cache (Varnish/wbudowany FPC), brak `CacheableInterface`, tagów cache, `X-Magento-Cache-Debug` |
+| Cache (block cache, `cache:clean` vs `cache:flush`) | ⚠️ Etap 4 (cache blokowy) + Etap 14 (FPC, szkielet gotowy, zadanie w toku) | Etap 14 pokrywa wbudowany FPC: `X-Magento-Cache-Debug`/`X-Magento-Tags`, `IdentityInterface` na bloku i modelu, `cacheable="false"` (i jego koszt: wyłącza cache całej strony), unieważnianie po tagach przez `clean_cache_by_tags`, obejście przez surowy SQL. **Nadal luka:** Varnish/ESI (brak w środowisku — tylko lektura wygenerowanego VCL), private content / `customer-data` sections |
 | **Stores / websites / store views** | ❌ brak | **luka** — cały plan działa na jednym store view; brak zadania o scope resolution (`ScopeInterface`, website-level config, per-store-view różne ceny/atrybuty), przełączaniu store code w URL |
 | Architektura panelu admina (ACL, menu, UI Components) | ✅ Etap 5 | solidnie |
 | Atrybuty i attribute sety | ⚠️ Etap 3, tylko product attribute select | **luka częściowa** — brak tworzenia/klonowania attribute set przez CLI/UI, brak atrybutów EAV na innych encjach (customer, category) |
@@ -92,9 +92,11 @@ Cloud pipeline z `.magento.app.yaml`/`ece-tools`).
   możliwości ćwiczenia bez licencji/trial Commerce.
 - **Page Builder** — dostępny też dla Open Source jako osobny composer
   package, ale nieinstalowany w tym repo i nieobecny w planie.
-- **Full Page Cache / Varnish** — kontenery `compose*.yaml` w tym repo nie
-  zawierają Varnisha; FPC wbudowany jest teoretycznie dostępny, ale
-  nieprzetestowany.
+- **Varnish / ESI** — kontenery `compose*.yaml` w tym repo nie zawierają
+  Varnisha (wbudowany FPC działa i jest ćwiczony w Etapie 14). ESI działa
+  tylko z Varnishem, więc pozostaje poza zasięgiem; `bin/magento
+  varnish:vcl:generate` działa bez Varnisha i pozwala przynajmniej
+  przeczytać VCL (Etap 14, stretch).
 - **Import/Export (ETL, `Magento_ImportExport`)** — brak w planie mimo że
   to częsty temat egzaminacyjny przy "data flow" i integracjach.
 
@@ -135,8 +137,10 @@ Cloud pipeline z `.magento.app.yaml`/`ece-tools`).
 6. Nowy, duży etap: **Checkout i sales** — customowy shipping method
    (`Magento_Shipping` carrier), customowy payment method (offline),
    observer na `sales_order_place_after`, layout XML dla checkout step.
-7. Full Page Cache: włączyć wbudowany FPC (bez Varnisha), sprawdzić
-   `CacheableInterface`, tagi cache, nagłówki debug.
+7. ~~Full Page Cache~~ — **szkielet gotowy, Etap 14** (`IdentityInterface`,
+   tagi cache, `cacheable="false"`, nagłówki debug; wbudowany FPC był już
+   włączony) — dokończenie TODO i pomiarów po stronie użytkownika.
+   Zostaje: private content / `customer-data` sections.
 
 **Wymaga osobnego środowiska (poza tym repo):**
 1. **Adobe Commerce Cloud trial** (Adobe udostępnia trial dla partnerów/

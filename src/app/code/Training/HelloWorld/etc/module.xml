@@ -4,6 +4,7 @@
     <module name="Training_HelloWorld" setup_version="1.0.0">
         <sequence>
             <module name="Magento_UrlRewrite"/>
+            <module name="Training_Greeting"/>
         </sequence>
     </module>
 </config>

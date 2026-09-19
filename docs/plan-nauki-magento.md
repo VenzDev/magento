@@ -511,6 +511,135 @@ Professional, dotąd niepokryty w tym planie (patrz
 
 ---
 
+## Etap 14 — Full Page Cache (dodatek pod certyfikację AD0-E724)
+
+**Cel:** zrozumieć, jak FPC decyduje, co i na jak długo cache'uje, jak strony
+są tagowane i jak się je unieważnia — temat pokrywany w sekcji
+"Architecture" egzaminu Adobe Commerce Developer Professional, dotąd
+pokryty tylko częściowo (Etap 4 dotknął wyłącznie cache blokowego; patrz
+`docs/adobe-commerce-developer-professional-gap-analysis.md`).
+
+**Środowisko:** wbudowany FPC (`caching_application` = built-in, backend
+Redis), tryb developer. **Brak Varnisha** w `compose*.yaml` — Etap uczy
+mechanizmu (tagi, identities, unieważnianie), który jest wspólny dla obu
+trybów; różnice built-in vs Varnish to część stretch goala.
+
+**Jak sprawdzać (ważne):** nagłówki odpowiedzi.
+
+```bash
+curl -sk -D - --resolve magento.test:443:127.0.0.1 https://magento.test/helloworld -o /dev/null \
+  | grep -iE "^HTTP|x-magento-cache-debug|x-magento-tags|cache-control"
+```
+
+- `--resolve` jest potrzebne: `curl https://localhost/...` dostaje `302` na
+  `magento.test` (Magento wymusza skonfigurowany host), więc mierzysz
+  przekierowanie, nie cache. W zsh nie wkładaj `--resolve ...` do zmiennej —
+  nie rozbije się na osobne argumenty; wpisuj go wprost.
+- `X-Magento-Cache-Debug`: `MISS` (strona wygenerowana i zapisana), `HIT`
+  (z cache). Brak tego nagłówka = odpowiedź nie wchodzi w ogóle do FPC.
+- `X-Magento-Tags` jest widoczny tylko w trybie developer (na produkcji tagi
+  trafiają do nagłówka wyłącznie dla Varnisha).
+
+**Punkt wyjścia (zmierzony na tym środowisku):** `/helloworld` wyświetla
+"Current date". Po `cache:clean full_page` pierwsze żądanie to `MISS` z datą
+`4:11 PM`; to samo żądanie 65 s później to `HIT` **nadal z `4:11 PM`** (na
+serwerze było już `4:12`). FPC zamroził stronę na cały TTL (`max-age=86400`).
+
+**Szkielet już wygenerowany:**
+- `Training_HelloWorld`: `etc/module.xml` (sequence na `Training_Greeting`),
+  `Block/LatestGreetings.php` (blok z listą 3 ostatnich wpisów Greeting,
+  implementuje `IdentityInterface`, metody z `// TODO`),
+  `view/frontend/templates/latest_greetings.phtml` (gotowy),
+  `view/frontend/layout/helloworld_index_index.xml` (blok dodany, z
+  komentarzem do eksperymentu B).
+- `Training_Greeting`: `Model/Greeting.php` implementuje teraz
+  `IdentityInterface` (stała `CACHE_TAG`, `getIdentities()` zwraca na razie
+  `[]` — do uzupełnienia).
+- Stan wyjściowy jest **celowo "zepsuty"**: strona renderuje się poprawnie
+  (`200`, `MISS` → `HIT`), ale `X-Magento-Tags` nie zawiera żadnego tagu
+  Greeting, więc żaden zapis wpisu jej nie unieważni.
+
+**Zadanie (do Ciebie):**
+
+**A. Diagnostyka (bez kodu).**
+1. Sprawdź `MISS` → `HIT` na `/helloworld` i na stronie głównej. Odczytaj
+   `X-Magento-Tags`: skąd biorą się tagi `cat_c_*` i `cms_b`? Który blok
+   strony za nie odpowiada? Dlaczego nie ma tagu Twojego bloku?
+2. Zreprodukuj zamrożoną datę (jak w "Punkcie wyjścia").
+3. Porównaj `bin/magento cache:clean full_page`, `cache:flush` i
+   `cache:clean config` — po którym z nich następne żądanie to `MISS`, a po
+   którym nadal `HIT`? Wyjaśnij dlaczego.
+
+**B. Eksperyment `cacheable="false"`.**
+1. Dopisz `cacheable="false"` do bloku `training.helloworld.greeting` w
+   layoucie (miejsce zaznaczone komentarzem), `cache:flush`.
+2. Zmierz: czy data przestała się zamrażać? Co z `X-Magento-Cache-Debug`,
+   `Cache-Control` i `X-Magento-Tags`? Czy strona główna też ucierpiała?
+   (Zmierzone przy przygotowaniu zadania: każde żądanie `MISS`,
+   `Cache-Control: no-store`, tagi spadają do samego `FPC` — czyli
+   **jeden** niecache'owalny blok wyłącza cache **całej** strony; strona
+   główna bez zmian.)
+3. Cofnij zmianę. Wyjaśnij, dlaczego to rozwiązanie jest złe dla realnego
+   sklepu, mimo że "działa".
+
+**C. Unieważnianie po tagach (właściwy kod).**
+1. `Block/LatestGreetings::getGreetings()` — zapytanie o 3 ostatnie wpisy
+   (kroki w docblocku).
+2. `Block/LatestGreetings::getIdentities()` i
+   `Model/Greeting::getIdentities()` — zwróć tagi tak, żeby **i edycja
+   istniejącego wpisu, i dodanie nowego** unieważniały stronę. Pytanie w
+   docblocku jest kluczowe — zanim napiszesz, odpowiedz na nie sam(a).
+3. Zweryfikuj każdy scenariusz (oczekiwane wyniki zmierzone przy
+   przygotowaniu zadania, na działającym rozwiązaniu):
+   - `X-Magento-Tags` zawiera teraz Twój tag listy.
+   - Zapis wpisu przez repozytorium (admin: Training Greetings → Add New;
+     zapisuje przez `GreetingRepositoryInterface`) → następne żądanie
+     `/helloworld` to `MISS` i widać nowy wpis.
+   - Strona główna po takim zapisie nadal `HIT` — unieważniana jest tylko
+     strona z Twoim tagiem, nie cały FPC.
+   - Wpis dodany **surowym SQL** (`bin/mysql`, `INSERT INTO
+     training_greeting ...`) → `/helloworld` nadal `HIT` **bez** nowego
+     wpisu. Dlaczego? (Podpowiedź: co emituje event `clean_cache_by_tags`
+     i kto go woła.)
+   - Usunięcie wpisu przez repozytorium → `MISS`; przy okazji zniknie też
+     "zalegający" wpis z surowego SQL, bo strona zostanie wygenerowana od
+     nowa.
+   - Zapis dowolnego produktu w adminie też unieważnia stronę — observer z
+     Etapu 2 tworzy wtedy wpis Greeting. Zauważ ten efekt uboczny.
+4. **Eksperyment kontrolny:** zostaw tylko tagi per-wpis
+   (`training_greeting_<id>`) i bez tagu listy. Zmierzone: edycja
+   istniejącego wpisu unieważnia stronę (`MISS`), ale **dodanie nowego —
+   nie** (`HIT`, brak nowego wpisu). Wyjaśnij dlaczego, i przywróć poprawną
+   wersję.
+
+**D. Pytanie otwarte (kod opcjonalny).** Data z eksperymentu B nadal jest
+problemem, a `cacheable="false"` odpada. Wskaż i uzasadnij co najmniej dwa
+lepsze sposoby (podpowiedzi do rozważenia: renderowanie po stronie
+przeglądarki w JS; sekcje private content / `customer-data` i
+`etc/frontend/sections.xml`; ESI — i dlaczego ESI wymaga Varnisha, a nie
+działa w trybie built-in; skrócenie TTL — i dlaczego to tępe narzędzie).
+Stretch: zaimplementuj wersję z JS.
+
+**E. Stretch: VCL.** `bin/magento varnish:vcl:generate` działa bez
+uruchomionego Varnisha (zweryfikowane). Przeczytaj wynik i znajdź: gdzie
+Varnish unieważnia strony po tagach (`ban(... X-Magento-Tags-Pattern)`),
+gdzie zróżnicowany jest klucz cache (`X-Magento-Vary` w `vcl_hash`), i ile
+wynosi `grace`. **Nie przełączaj** `caching_application` na Varnish — bez
+działającego Varnisha zepsujesz sklep.
+
+**Kryteria odbioru:**
+- Wyjaśnisz, dlaczego `cacheable="false"` na jednym bloku wyłącza cache
+  całej strony i czemu w praktyce się go unika.
+- Wyjaśnisz, dlaczego samo `$_cacheTag` na modelu nie wystarcza (klasa
+  musi implementować `IdentityInterface`, bo `Tag\Strategy\Identifier`
+  zwraca `[]` dla innych obiektów) i po co dwa poziomy tagów (per-wpis i
+  listy).
+- Wyjaśnisz, dlaczego surowy SQL nie unieważnia FPC i co to oznacza dla
+  importów hurtowych (po nich potrzebny jest ręczny `cache:clean`).
+- Scenariusze z punktu C.3 dają dokładnie opisane wyniki na Twoim kodzie.
+
+---
+
 ## Jak korzystać z tego planu z Claude Code
 
 - Rób jeden checkbox/etap na raz, commituj po zamknięciu etapu.

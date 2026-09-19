@@ -1,0 +1,23 @@
+<?php
+/**
+ * @var \Training\HelloWorld\Block\LatestGreetings $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+$greetings = $block->getGreetings();
+?>
+<div class="training-helloworld-latest">
+    <h2><?= $escaper->escapeHtml(__('Latest greetings')) ?></h2>
+    <?php if ($greetings): ?>
+        <ul>
+            <?php foreach ($greetings as $greeting): ?>
+                <li>
+                    #<?= (int) $greeting->getId() ?>
+                    <?= $escaper->escapeHtml($greeting->getMessage()) ?>
+                    (<?= $escaper->escapeHtml($greeting->getCreatedAt()) ?>)
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php else: ?>
+        <p><?= $escaper->escapeHtml(__('No greetings yet.')) ?></p>
+    <?php endif; ?>
+</div>

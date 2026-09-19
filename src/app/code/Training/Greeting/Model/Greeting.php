@@ -4,15 +4,38 @@ declare(strict_types=1);
 
 namespace Training\Greeting\Model;
 
+use Magento\Framework\DataObject\IdentityInterface;
 use Magento\Framework\Model\AbstractModel;
 use Training\Greeting\Api\Data\GreetingInterface;
 use Training\Greeting\Model\ResourceModel\Greeting as GreetingResource;
 
-class Greeting extends AbstractModel implements GreetingInterface
+class Greeting extends AbstractModel implements GreetingInterface, IdentityInterface
 {
+    public const CACHE_TAG = 'training_greeting';
+
     protected function _construct(): void
     {
         $this->_init(GreetingResource::class);
+    }
+
+    /**
+     * Etap 14 (Full Page Cache) — TODO: zwróć tagi tego wpisu.
+     *
+     * Po każdym save()/delete() Magento woła event clean_cache_by_tags, a
+     * Magento\PageCache\Observer\FlushCacheByTags czyści z FPC wszystkie strony
+     * oznaczone TYMI tagami. Samo ustawienie protected $_cacheTag NIE wystarczy —
+     * strategia Tag\Strategy\Identifier bierze tagi wyłącznie z getIdentities()
+     * i zwraca [] dla obiektu, który nie jest IdentityInterface.
+     *
+     * Zastanów się, jakie tagi ma zwracać wpis, żeby zarówno edycja
+     * istniejącego wpisu, jak i dodanie nowego unieważniało stronę z listą
+     * (zob. pytanie w Training\HelloWorld\Block\LatestGreetings::getIdentities()).
+     *
+     * @return string[]
+     */
+    public function getIdentities(): array
+    {
+        return [];
     }
 
     public function getId(): ?int

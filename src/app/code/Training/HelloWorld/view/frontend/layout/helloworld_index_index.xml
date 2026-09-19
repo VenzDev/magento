@@ -3,9 +3,17 @@
       xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceContainer name="content">
+            <!--
+                Etap 14, eksperyment B: dopisz atrybut cacheable="false" do tego
+                bloku, sprawdź nagłówki odpowiedzi (curl -I) i zobacz, co się
+                stało z cache CAŁEJ strony — a potem cofnij zmianę.
+            -->
             <block class="Training\HelloWorld\Block\Greeting"
                    name="training.helloworld.greeting"
                    template="Training_HelloWorld::greeting.phtml"/>
+            <block class="Training\HelloWorld\Block\LatestGreetings"
+                   name="training.helloworld.latest_greetings"
+                   template="Training_HelloWorld::latest_greetings.phtml"/>
         </referenceContainer>
     </body>
 </page>
