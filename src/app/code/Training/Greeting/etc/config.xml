@@ -6,6 +6,9 @@
             <general>
                 <retention_days>30</retention_days>
             </general>
+            <storefront>
+                <greeting_suffix>(default scope)</greeting_suffix>
+            </storefront>
         </training_greeting>
     </default>
 </config>

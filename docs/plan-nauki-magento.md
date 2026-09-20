@@ -655,6 +655,125 @@ działającego Varnisha zepsujesz sklep.
 
 ---
 
+## Etap 15 — Stores / Websites / Store Views (dodatek pod certyfikację AD0-E724)
+
+**Cel:** zrozumieć hierarchię Website → Store (Group) → Store View i
+rozwiązywanie configu po scope (`default` → `website` → `store`) — temat
+pokrywany w sekcji "Architecture" egzaminu Adobe Commerce Developer
+Professional, dotąd niepokryty w tym planie (cały plan do tej pory działał
+na jednym store view — patrz
+`docs/adobe-commerce-developer-professional-gap-analysis.md`).
+
+**Kluczowe pojęcia:** Website (poziom domeny/checkout), Store Group (root
+category, "sklep" logiczny), Store View (locale/waluta/UI), `core_config_data`
+(kolumny `scope`/`scope_id`), `ScopeConfigInterface::getValue()` z rozpoznawaniem
+bieżącego store'a bez podawania kodu, `catalog/price/scope` (global vs
+per-website ceny), przełącznik `?___store=<code>`.
+
+**Środowisko:** obecnie repo ma **jeden** website (`base`) i **jeden** store
+view (`default`) — zweryfikowane `bin/magento store:website:list` /
+`bin/magento store:list`. `bin/n98-magerun2` ma gotowe komendy CLI do
+tworzenia struktury bez klikania w adminie: `sys:website:create`,
+`sys:store-group:create`, `sys:store:create` (odpowiednio `*:delete`, gdyby
+trzeba było posprzątać).
+
+**Szkielet już wygenerowany** (`Training_Greeting` + `Training_HelloWorld`):
+- `Training_Greeting/etc/adminhtml/system.xml` — nowa grupa "Storefront" z
+  polem `greeting_suffix` (scope `store`, czyli `showInStore="1"`).
+- `Training_Greeting/etc/config.xml` — wartość domyślna `(default scope)`.
+- `Training_HelloWorld/Block/Greeting.php` — wstrzyknięty
+  `ScopeConfigInterface`, nowa metoda `getGreetingSuffix(): string` z `// TODO`
+  (docblock zadaje pytanie, na które warto odpowiedzieć **przed** napisaniem
+  kodu — patrz punkt B.2 niżej).
+- `view/frontend/templates/greeting.phtml` — doklejone wywołanie
+  `getGreetingSuffix()` obok istniejącego `getGreeting()`.
+- Zweryfikowane: `/helloworld` renderuje się (`200`, `MISS`), sufiks na razie
+  pusty (`"Hello, Magento! "`) — szkielet nie psuje strony, tylko nic jeszcze
+  nie dokleja.
+
+**Zadanie (do Ciebie):**
+
+**A. Diagnostyka struktury (bez kodu).**
+1. `bin/magento store:website:list`, `bin/magento store:list` — potwierdź
+   stan wyjściowy (1 website, 1 store view).
+2. Zajrzyj do tabel `store_website`, `store_group`, `store` (`bin/mysql`) —
+   zobacz kolumny `website_id`, `group_id`, `store_id` i jak się do siebie
+   odnoszą (Store Group ma `root_category_id` i `website_id`; Store View ma
+   `group_id`).
+3. Zajrzyj do `core_config_data` (`SELECT * FROM core_config_data WHERE path
+   LIKE 'training_greeting%'`) — na starcie powinien tam być tylko wpis(y)
+   scope `default`. Zwróć uwagę na kolumny `scope`/`scope_id` — to one, nie
+   nazwa tabeli, decydują o poziomie.
+
+**B. Drugi Store View, ta sama Website (scope: `store`).**
+1. Stwórz drugi store view na istniejącym website `base` przez
+   `bin/n98-magerun2 sys:store:create <code> "<Nazwa>" --website-id=1`
+   (użyje domyślnej grupy website `base`). `bin/magento cache:flush` po
+   utworzeniu.
+2. **Zanim napiszesz kod** w `getGreetingSuffix()`: przewiduj — jeśli
+   ustawisz wartość pola "Greeting suffix" na poziomie **store view**
+   (Stores > Configuration > Training Greeting > Storefront, ze
+   scope-switchera w lewym górnym rogu przełączonego na Twój nowy store
+   view), a wartość domyślna (scope `default`) zostanie inna — którą
+   zobaczysz, wchodząc na `/helloworld?___store=<kod_nowego_store_view>`?
+   Dopisz kod w `getGreetingSuffix()` (jedna linijka —
+   `$this->scopeConfig->getValue(...)`) i sprawdź, czy przewidywanie było
+   trafne.
+3. Zweryfikuj w `core_config_data`: nowy wiersz powinien mieć
+   `scope='stores'`, `scope_id=<id nowego store view>` — **nie**
+   nadpisuje wiersza `default`, tylko go przesłania dla tego store view.
+
+**C. Website-level scope.**
+1. Stwórz drugą Website (`bin/n98-magerun2 sys:website:create <code>
+   "<Nazwa>"`), na niej nową Store Group (`sys:store-group:create`) i na tej
+   grupie kolejny store view (`sys:store:create --group-code=<code>`).
+2. Ustaw wartość "Greeting suffix" na poziomie **website** (nie store view)
+   dla nowej website. Sprawdź store view należący do tej website — dostaje
+   wartość website, mimo że nie ma własnego wpisu na poziomie `store`. To
+   jest właśnie fallback: `store` → `website` → `default`, sprawdzany w tej
+   kolejności aż trafi na pierwszy istniejący wpis.
+3. `bin/magento config:show training_greeting/storefront/greeting_suffix
+   --scope=websites --scope-code=<code>` vs bez `--scope` — porównaj wynik.
+
+**D. Ceny per scope (diagnostyka, bez kodu w Training).**
+1. Sprawdź `bin/magento config:show catalog/price/scope` (domyślnie global —
+   `0`). Przełącz na website (`bin/magento config:set catalog/price/scope
+   1`), `bin/magento indexer:reindex` (ceny są indeksowane).
+2. W adminie, na dowolnym produkcie, przełącz scope-switcher na Twoją drugą
+   website i ustaw inną cenę niż globalna. Sprawdź przez
+   `ProductRepositoryInterface::get($sku, false, $storeId)` (np. w
+   `bin/magento's` `dev:console` albo szybkim skrypcie w `bin/cli`), że dwie
+   różne wartości `$storeId` dają dwie różne ceny tego samego SKU.
+3. Cofnij `catalog/price/scope` na `0` (global) po eksperymencie, chyba że
+   świadomie chcesz zostawić multi-website pricing włączone —
+   **przełączanie tego configu w realnym sklepie z danymi cenowymi jest
+   nieodwracalne bez ręcznej migracji danych**, więc rozumienie tego
+   ostrzeżenia jest częścią zadania.
+
+**E. Stretch:** przeczytaj `Magento\Store\Model\StoreManager::getStore()` —
+skąd bierze bieżący store, gdy nie podasz argumentu (kolejność: parametr
+requestu `___store` → cookie → store domyślny website'u z current group).
+Sprawdź nagłówki na `/helloworld?___store=<kod>` przy pierwszym i drugim
+requeście (bez parametru) — czy druga wizyta "pamięta" wybrany store view, i
+po czym (podpowiedź: cookie `store`, plus jak to się ma do `X-Magento-Vary` z
+Etapu 14).
+
+**Kryteria odbioru:**
+- Umiesz narysować/opisać hierarchię Website → Store Group → Store View na
+  Twoich własnych, utworzonych w tym etapie encjach (nie tylko na
+  `base`/`default`).
+- Wyjaśnisz kolejność fallbacku configu (`store` → `website` → `default`) i
+  pokażesz to na realnym wierszu w `core_config_data`, który sam(a)
+  utworzyłeś/aś.
+- `getGreetingSuffix()` daje różne wyniki na `/helloworld` w zależności od
+  `?___store=`, zgodnie z Twoim przewidywaniem z punktu B.2 (albo: potrafisz
+  wyjaśnić, dlaczego przewidywanie było błędne).
+- Wyjaśnisz różnicę między `catalog/price/scope` = global a website, i
+  dlaczego przełączenie tego na produkcyjnym sklepie z istniejącymi danymi
+  jest ryzykowną, jednokierunkową operacją.
+
+---
+
 ## Jak korzystać z tego planu z Claude Code
 
 - Rób jeden checkbox/etap na raz, commituj po zamknięciu etapu.

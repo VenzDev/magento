@@ -5,6 +5,6 @@
  */
 ?>
 <div class="training-helloworld-greeting">
-    <h1><?= $block->escapeHtml($block->getGreeting()) ?></h1>
+    <h1><?= $block->escapeHtml($block->getGreeting()) ?> <?= $block->escapeHtml($block->getGreetingSuffix()) ?></h1>
     <p><?= $block->escapeHtml(__('Current date')) ?>: <time data-mage-init="<?= $escaper->escapeHtmlAttr($block->getDateConfig()) ?>"></time></p>
 </div>

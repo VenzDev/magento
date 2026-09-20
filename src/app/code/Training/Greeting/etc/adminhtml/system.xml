@@ -17,6 +17,15 @@
                     <validate>validate-digits validate-greater-than-zero</validate>
                 </field>
             </group>
+            <group id="storefront" translate="label" type="text" sortOrder="20"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Storefront</label>
+                <field id="greeting_suffix" translate="label comment" type="text" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Greeting suffix</label>
+                    <comment>Etap 15 (scope): dopisywane po komunikacie na /helloworld. showInStore="1" pozwala nadpisać tę wartość osobno per store view — sprawdź, jak się to zachowuje na poziomie website vs store view.</comment>
+                </field>
+            </group>
         </section>
     </system>
 </config>
