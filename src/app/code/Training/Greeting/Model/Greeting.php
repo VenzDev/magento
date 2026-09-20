@@ -19,23 +19,19 @@ class Greeting extends AbstractModel implements GreetingInterface, IdentityInter
     }
 
     /**
-     * Etap 14 (Full Page Cache) — TODO: zwróć tagi tego wpisu.
-     *
      * Po każdym save()/delete() Magento woła event clean_cache_by_tags, a
-     * Magento\PageCache\Observer\FlushCacheByTags czyści z FPC wszystkie strony
-     * oznaczone TYMI tagami. Samo ustawienie protected $_cacheTag NIE wystarczy —
-     * strategia Tag\Strategy\Identifier bierze tagi wyłącznie z getIdentities()
-     * i zwraca [] dla obiektu, który nie jest IdentityInterface.
+     * Magento\PageCache\Observer\FlushCacheByTags czyści z FPC strony oznaczone
+     * TYMI tagami. Samo $_cacheTag nie wystarczy — strategia
+     * Tag\Strategy\Identifier bierze tagi wyłącznie z getIdentities().
      *
-     * Zastanów się, jakie tagi ma zwracać wpis, żeby zarówno edycja
-     * istniejącego wpisu, jak i dodanie nowego unieważniało stronę z listą
-     * (zob. pytanie w Training\HelloWorld\Block\LatestGreetings::getIdentities()).
+     * Tag listy jest konieczny: nowy wpis ma świeże ID, którego nie ma jeszcze
+     * na żadnej scache'owanej stronie, więc sam tag per-wpis go nie unieważni.
      *
      * @return string[]
      */
     public function getIdentities(): array
     {
-        return [];
+        return [self::CACHE_TAG, self::CACHE_TAG . '_' . $this->getId()];
     }
 
     public function getId(): ?int

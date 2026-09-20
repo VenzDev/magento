@@ -11,6 +11,7 @@ use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
 use Training\Greeting\Api\Data\GreetingInterface;
 use Training\Greeting\Api\GreetingRepositoryInterface;
+use Training\Greeting\Model\Greeting as GreetingModel;
 
 /**
  * Etap 14 (Full Page Cache) — blok pokazujący 3 ostatnie wpisy Greeting.
@@ -47,23 +48,21 @@ class LatestGreetings extends Template implements IdentityInterface
      */
     public function getGreetings(): array
     {
-        return [];
+        $sortBuilder = $this->sortOrderBuilder->setField('entity_id')->setDescendingDirection()->create();
+        $searchCriteria = $this->searchCriteriaBuilder->setPageSize(self::LIMIT)->addSortOrder($sortBuilder)->create();
+
+        return $this->greetingRepository->getList($searchCriteria)->getItems();
     }
 
     /**
-     * TODO: zwróć tagi cache, od których zależy ta strona. Efekt widać w
-     * nagłówku odpowiedzi X-Magento-Tags (tryb developer).
-     *
-     * Do przemyślenia zanim napiszesz: blok pokazuje LISTĘ ostatnich wpisów.
-     * Gdy ktoś doda NOWY wpis, dostaje on nowe ID, którego nie ma jeszcze w
-     * żadnej scache'owanej stronie. Czy tagi per-wpis (np. training_greeting_5)
-     * wystarczą, żeby taką stronę unieważnić? Jeśli nie — jaki tag musi
-     * dostać i blok, i model, żeby się spotkały?
+     * Blok pokazuje listę, więc zależy od dowolnej zmiany w Greeting — tag
+     * listy, który model emituje przy każdym zapisie i usunięciu. Tagi
+     * per-wpis byłyby tu zbędne, bo tag listy już je pokrywa.
      *
      * @return string[]
      */
     public function getIdentities(): array
     {
-        return [];
+        return [GreetingModel::CACHE_TAG];
     }
 }

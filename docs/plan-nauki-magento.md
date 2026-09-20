@@ -582,7 +582,10 @@ serwerze było już `4:12`). FPC zamroził stronę na cały TTL (`max-age=86400`
 3. Cofnij zmianę. Wyjaśnij, dlaczego to rozwiązanie jest złe dla realnego
    sklepu, mimo że "działa".
 
-**C. Unieważnianie po tagach (właściwy kod).**
+**C. Unieważnianie po tagach (właściwy kod).** ✅ *Kod zrobiony i zweryfikowany
+(`getGreetings()` Twój, `getIdentities()` w bloku i modelu razem z Claude).
+Zostają pomiary z punktu 3 i eksperyment kontrolny z punktu 4 do samodzielnego
+powtórzenia.*
 1. `Block/LatestGreetings::getGreetings()` — zapytanie o 3 ostatnie wpisy
    (kroki w docblocku).
 2. `Block/LatestGreetings::getIdentities()` i
