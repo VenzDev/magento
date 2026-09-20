@@ -1,7 +1,10 @@
 <?php
-/** @var \Training\HelloWorld\Block\Greeting $block */
+/**
+ * @var \Training\HelloWorld\Block\Greeting $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
 ?>
 <div class="training-helloworld-greeting">
     <h1><?= $block->escapeHtml($block->getGreeting()) ?></h1>
-    <p><?= $block->escapeHtml(__('Current date')) ?>: <?= $block->escapeHtml($block->getCurrentDate()) ?></p>
+    <p><?= $block->escapeHtml(__('Current date')) ?>: <time data-mage-init="<?= $escaper->escapeHtmlAttr($block->getDateConfig()) ?>"></time></p>
 </div>

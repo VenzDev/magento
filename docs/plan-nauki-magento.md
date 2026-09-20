@@ -623,6 +623,18 @@ przeglądarki w JS; sekcje private content / `customer-data` i
 działa w trybie built-in; skrócenie TTL — i dlaczego to tępe narzędzie).
 Stretch: zaimplementuj wersję z JS.
 
+✅ *Wersja z JS zrobiona i sprawdzona w przeglądarce* (`Block/Greeting::getDateConfig()`,
+`view/frontend/web/js/current-date.js`, `greeting.phtml`): serwer wysyła pusty
+`<time data-mage-init="...">`, a moduł AMD wpisuje datę przez `Intl.DateTimeFormat`
+z locale i strefą **sklepu** (nie odwiedzającego). Zmierzone: przeglądarka w
+`Europe/Warsaw` pokazała czas `America/New_York` (strefa sklepu), strona przez cały
+test była `HIT`, a po ponad minucie data przesunęła się z `9:41 AM` na `9:43 AM`.
+Serwerowo wyrenderowanej daty celowo nie ma — zamrożona wartość mignęłaby przed
+uruchomieniem JS, a bez JS byłaby po prostu błędna. Locale i strefa siedzą w
+scache'owanym HTML-u, więc zmiana ustawień strefy wymaga wyczyszczenia FPC
+(`cache:clean config` go nie rusza — punkt A.3; to wniosek z pomiaru, nie
+sprawdzony bezpośrednio).
+
 **E. Stretch: VCL.** `bin/magento varnish:vcl:generate` działa bez
 uruchomionego Varnisha (zweryfikowane). Przeczytaj wynik i znajdź: gdzie
 Varnish unieważnia strony po tagach (`ban(... X-Magento-Tags-Pattern)`),
