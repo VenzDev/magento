@@ -854,6 +854,138 @@ dla `mystore`, `my_website` dla `my_store_my_website`.
 
 ---
 
+## Etap 16 — Checkout i sprzedaż: własny przewoźnik (dodatek pod certyfikację AD0-E724)
+
+**Cel:** zrozumieć, jak Magento wylicza koszt dostawy podczas zakupów, i zbudować
+własną metodę dostawy. To najsłabiej pokryty temat z sekcji "Customizations"
+egzaminu (patrz `docs/adobe-commerce-developer-professional-gap-analysis.md`):
+dotąd w planie nie było nic o koszyku, checkoucie i zamówieniach.
+
+### Najpierw: jak to działa (dla kogoś, kto nie zna Magento)
+
+Wyobraź sobie klienta, który wybrał towar i kliknął "Dalej" w checkoucie.
+Magento musi pokazać mu listę sposobów dostawy z cenami. Robi to tak:
+
+1. Bierze **koszyk klienta** (w kodzie: *quote*) i jego adres dostawy.
+2. Pakuje te dane w jedno zapytanie (*RateRequest*): wartość koszyka, liczba
+   sztuk, waga, kraj, kod pocztowy.
+3. Pyta **każdego włączonego przewoźnika** (*carrier*): "ile kosztuje dostawa?".
+   Lista przewoźników pochodzi z konfiguracji: każdy wpis
+   `carriers/<kod>/model` wskazuje klasę PHP, którą Magento wywołuje.
+4. Każdy przewoźnik odpowiada listą **metod** z cenami (*rates*). Może też
+   odpowiedzieć "nie mam nic do zaoferowania" — wtedy w ogóle nie pojawia się
+   na liście klienta.
+5. Klient widzi wszystkie odpowiedzi razem i wybiera jedną.
+
+Twoim zadaniem jest napisać takiego przewoźnika: **Training Courier**.
+
+**Słowniczek:**
+- **Quote** — koszyk (jeszcze nie zamówienie). Zamówienie (*order*) powstaje
+  dopiero po złożeniu zakupu.
+- **Carrier / przewoźnik** — klasa PHP odpowiedzialna za wycenę dostawy.
+- **Metoda dostawy** — konkretna opcja przewoźnika (np. "Standard delivery").
+  Jeden przewoźnik może mieć wiele metod; nasz ma jedną.
+- **`collectRates()`** — jedyna metoda, w której faktycznie liczysz cenę. Zwraca
+  wynik z metodami albo `false` ("nic nie oferuję").
+- **Kod przewoźnika (`trainingcourier`)** — "nazwa techniczna", po której
+  Magento łączy klasę z konfiguracją. Musi być identyczny w trzech miejscach
+  (patrz tabela niżej), inaczej przewoźnik po prostu nie zadziała.
+
+### Co zostało przygotowane
+
+Nowy moduł `Training_Courier` (`src/app/code/Training/Courier`):
+
+| Plik | Po co jest | Stan |
+|---|---|---|
+| `registration.php`, `etc/module.xml` | Rejestruje moduł w Magento (wymaga też modułów `Magento_Shipping` i `Magento_Quote`) | gotowe |
+| `etc/config.xml` | Wartości domyślne: włączony, nazwa "Training Courier", cena 7,90, darmowa dostawa od 100, **oraz wskazanie klasy** (`carriers/trainingcourier/model`) | gotowe |
+| `etc/adminhtml/system.xml` | Pola w panelu admina, żeby edytować powyższe bez kodu | gotowe, sprawdzone w przeglądarce |
+| `Model/Carrier/Courier.php` | Klasa przewoźnika: konstruktor i `getAllowedMethods()` gotowe, **`collectRates()` do napisania** | **TODO** |
+
+Kod `trainingcourier` musi być taki sam w: węźle `<trainingcourier>` w
+`config.xml`, `id="trainingcourier"` w `system.xml` i `$_code` w klasie.
+
+**Stan wyjściowy (zmierzony):** moduł jest włączony, a w panelu admina
+(Stores → Configuration → Sales → **Delivery Methods**) widać grupę
+**Training Courier** z sześcioma polami. Ponieważ `collectRates()` na razie
+zwraca `false`, przewoźnika **nie ma** na liście dostaw w koszyku — dostępni są
+tylko `flatrate` i `tablerate`.
+
+### Co masz zrobić
+
+**1. Napisz `collectRates()`.** Kroki są w docblocku metody w
+`Model/Carrier/Courier.php`. W skrócie: jeśli przewoźnik wyłączony — `false`;
+w przeciwnym razie zbuduj jedną metodę dostawy z tytułami z configu i ceną
+(domyślnie z configu, a `0`, gdy wartość koszyka osiągnie próg darmowej
+dostawy), dołącz ją do wyniku i zwróć.
+
+**2. Wyczyść cache:** `bin/magento cache:flush`.
+
+**3. Sprawdź wynik bez klikania w sklepie — przez REST** (to samo zapytanie,
+które wykonuje checkout). Wklej po kolei:
+
+```bash
+B=https://magento.test/rest/default/V1
+# 1) nowy koszyk gościa — odpowiedź to jego identyfikator
+CART=$(curl -sk --resolve magento.test:443:127.0.0.1 -H "Content-Type: application/json" -X POST $B/guest-carts | tr -d '"')
+# 2) dodaj produkt (zmień sku i qty, żeby testować różne wartości koszyka)
+curl -sk --resolve magento.test:443:127.0.0.1 -H "Content-Type: application/json" -X POST $B/guest-carts/$CART/items \
+  -d "{\"cartItem\":{\"sku\":\"24-MB03\",\"qty\":1,\"quote_id\":\"$CART\"}}"
+# 3) zapytaj o dostępne dostawy
+curl -sk --resolve magento.test:443:127.0.0.1 -H "Content-Type: application/json" -X POST $B/guest-carts/$CART/estimate-shipping-methods \
+  -d '{"address":{"country_id":"US","region_id":12,"postcode":"90210"}}' | python3 -m json.tool | grep -E 'carrier_code|amount'
+```
+
+`--resolve ...` jest potrzebne, bo `localhost` przekierowuje na `magento.test`
+(patrz Etap 14). Każde uruchomienie tworzy koszyk w tabeli `quote`.
+
+**Oczekiwane wyniki** (zmierzone na działającym rozwiązaniu, cena Training
+Courier; próg darmowej dostawy 100):
+
+| Koszyk | Wartość | `trainingcourier` |
+|---|---|---|
+| 1 × `24-MB03` | 20,43 | **7,9** |
+| 3 × `24-WB01` | 96 | **7,9** |
+| 4 × `24-WB01` | 128 | **0** |
+| 1 × `24-MB01` | 377,52 | **0** |
+
+**4. Sprawdź, że konfiguracja naprawdę steruje kodem** (Stores → Configuration
+→ Sales → Delivery Methods → Training Courier): ustaw próg na 500 i powtórz
+wycenę dla `24-MB01` (377,52) — oczekiwane **7,9**; ustaw *Enabled = No* —
+przewoźnik znika z listy. Po eksperymencie przywróć wartości (albo użyj
+*Use system value*), żeby zostawić czysty stan.
+
+**5. (Opcjonalnie) w przeglądarce:** dodaj produkt do koszyka na sklepie, wejdź
+w Checkout i sprawdź, że "Training Courier" jest na liście. *Tej ścieżki nie
+testowałem w przeglądarce — jest zweryfikowane tylko przez REST.*
+
+**6. Pytania do zrozumienia:**
+- Dlaczego zmiana samego `$_code` w klasie (bez zmian w XML) sprawia, że
+  przewoźnik przestaje działać?
+- Czym różni się `getPackageValue()` od `getPackageValueWithDiscount()`, i
+  którego użyć do progu darmowej dostawy (i czemu)?
+- Co zobaczy klient, gdy `collectRates()` zwróci `false`, a co, gdy zwróci
+  wynik bez żadnej metody?
+
+**Kryteria odbioru:**
+- Tabela z punktu 3 zgadza się z Twoimi wynikami.
+- Zmiana progu i wyłączenie w adminie działają bez zmiany kodu.
+- Odpowiesz na pytania z punktu 6.
+
+**Sprzątanie po testach:** koszyki z REST zostają w bazie. Bezpiecznie usuniesz
+tylko te bez klienta i bez zamówień: `DELETE FROM quote WHERE customer_id IS NULL
+AND entity_id NOT IN (SELECT quote_id FROM sales_order WHERE quote_id IS NOT
+NULL);` — najpierw sprawdź `SELECT`-em, co usuniesz.
+
+**Pułapka narzędziowa (PHPStan):** po `setup:upgrade` komenda `bin/analyse`
+potrafi zgłaszać "unknown class …Factory" — to nie błąd kodu. Fabryki
+(`ResultFactory`, `MethodFactory` itd.) generują się przy pierwszym użyciu, a
+`setup:upgrade` czyści `generated/`. Wystarczy raz uruchomić kod, który ich
+używa (np. wywołać REST z punktu 3), a potem wyczyścić cache PHPStan:
+`bin/cli vendor/bin/phpstan clear-result-cache -c app/code/phpstan.neon`.
+
+---
+
 ## Jak korzystać z tego planu z Claude Code
 
 - Rób jeden checkbox/etap na raz, commituj po zamknięciu etapu.

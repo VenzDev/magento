@@ -1,6 +1,6 @@
 # Adobe Commerce Developer Professional — analiza luk względem tego repo
 
-Stan na: 2026-09-16 (zaktualizowano po Etapie 11 — Cron). Zweryfikowano
+Stan na: 2026-09-16 (ostatnia aktualizacja: 2026-09-21, po Etapie 16). Zweryfikowano
 oficjalny blueprint egzaminu (AD0-E724,
 `certification.adobe.com`) przez wyszukiwanie w sieci — patrz źródła na końcu.
 Ten dokument **nie jest częścią planu nauki** (`plan-nauki-magento.md`), tylko
@@ -61,13 +61,14 @@ repo.
 | Temat blueprintu | Pokrycie w repo | Komentarz |
 |---|---|---|
 | Operacje na katalogu | ⚠️ Etap 3 — tylko prosty atrybut + filtr | **luka** — brak katalogowych price rules, brak configurable/bundle/grouped product (tylko simple), brak zarządzania kategoriami programowo poza tym co jest w CLAUDE.md notatce |
-| **Checkout i sprzedaż** | ❌ brak całkowicie | **duża luka** — brak jakiegokolwiek zadania o `Quote`, `Order`, `Magento_Checkout` layout XML/JS (knockout components w checkout), cart price rules, shipping methods, payment methods, `SalesRule`, observery na `sales_order_place_after` itp. |
+| **Checkout i sprzedaż** | ⚠️ Etap 16 (szkielet gotowy, zadanie w toku) | Pokryty jest własny przewoźnik: `AbstractCarrier`, `collectRates()`, `RateRequest`, konfiguracja `carriers/*`, sprawdzany przez REST (`estimate-shipping-methods`). **Nadal luka:** płatności, zamówienia (`sales_order_place_after`), reguły cen koszyka (`SalesRule`), layout/JS kroków checkoutu |
 | Manipulacja typami encji | ⚠️ Etap 2/3 — custom entity (declarative schema) + product attribute | **luka częściowa** — brak tworzenia nowego **EAV entity type** (nie tylko atrybutu na istniejącym), brak custom entity z UI grid *i* EAV jednocześnie |
 | **Data flow do/z usług Adobe SaaS** | ❌ niemożliwe w tym środowisku | **luka strukturalna** — Catalog Service, Live Search, Product Recommendations, Data Space Connector to usługi **Commerce/Cloud-only** (SaaS integracje przez `Magento_ServicesId`, `Magento_DataServicesGraphQl` itp.), CE (Open Source) ich nie ma |
 | API (REST/GraphQL) | ✅ Etap 6, ale wąsko | **luka częściowa** — brak SOAP, brak async/bulk API (`etc/webapi_async.xml`), GraphQL tylko prosty resolver — brak mutation, brak cart/checkout GraphQL, brak custom resolvera z DI dla istniejącego typu (np. rozszerzenie `ProductInterface` w schema) |
 
 **Werdykt sekcji 2:** to największa merytoryczna luka. Checkout/sales to
-~1/3 tej sekcji i nie ma tu ani jednego zadania. Data Space/SaaS jest
+~1/3 tej sekcji; Etap 16 zaczął temat od własnego przewoźnika, ale płatności,
+zamówienia i reguły cen koszyka nadal nie mają zadań. Data Space/SaaS jest
 niemożliwe do przećwiczenia bez Adobe Commerce (Cloud lub on-prem Commerce
 license).
 
@@ -137,9 +138,10 @@ Cloud pipeline z `.magento.app.yaml`/`ece-tools`).
 5. Rozszerzenie Etapu 6: SOAP endpoint, async/bulk API
    (`etc/webapi_async.xml`), GraphQL mutation + rozszerzenie istniejącego
    typu (`ProductInterface`) przez `graphql_config` plugin.
-6. Nowy, duży etap: **Checkout i sales** — customowy shipping method
-   (`Magento_Shipping` carrier), customowy payment method (offline),
-   observer na `sales_order_place_after`, layout XML dla checkout step.
+6. Nowy, duży etap: **Checkout i sales** — **w toku, Etap 16** (własny
+   przewoźnik, szkielet gotowy). Zostają: customowy payment method
+   (offline), observer na `sales_order_place_after`, layout XML dla checkout
+   step.
 7. ~~Full Page Cache~~ — **szkielet gotowy, Etap 14** (`IdentityInterface`,
    tagi cache, `cacheable="false"`, nagłówki debug; wbudowany FPC był już
    włączony) — dokończenie TODO i pomiarów po stronie użytkownika.

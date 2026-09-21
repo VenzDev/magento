@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/config.xsd">
+    <default>
+        <carriers>
+            <trainingcourier>
+                <active>1</active>
+                <model>Training\Courier\Model\Carrier\Courier</model>
+                <title>Training Courier</title>
+                <name>Standard delivery</name>
+                <price>7.90</price>
+                <free_shipping_subtotal>100</free_shipping_subtotal>
+                <sort_order>10</sort_order>
+            </trainingcourier>
+        </carriers>
+    </default>
+</config>
