@@ -48,8 +48,7 @@ class Greeting extends Template
      */
     public function getGreetingSuffix(): string
     {
-        // TODO
-        return '';
+        return $this->scopeConfig->getValue(self::XML_PATH_GREETING_SUFFIX, ScopeInterface::SCOPE_STORE);
     }
 
     /**

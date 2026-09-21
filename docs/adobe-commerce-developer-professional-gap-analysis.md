@@ -46,14 +46,15 @@ większości z "czystym" Magento, niezależnym od edycji.
 | Plugin / preference / observer | ✅ Etap 2 | solidnie, w tym `di.xml` |
 | **URL rewrites** | ✅ Etap 13 | `UrlPersistInterface`/`UrlRewriteFactory`, `url_rewrite` (entity `custom`, unique constraint request_path+store_id, redirect_type 0 vs 301), `NoRouteHandler` — data patch w `Training_HelloWorld` zweryfikowany end-to-end (`/witaj` → 200 cicho, `/stare-hello` → 301, `/nieistniejace` → 404). Nieprzećwiczone: autogenerowane rewrite'y katalogu przy zmianie URL key produktu |
 | Cache (block cache, `cache:clean` vs `cache:flush`) | ⚠️ Etap 4 (cache blokowy) + Etap 14 (FPC, kod unieważniania po tagach zrobiony i zweryfikowany, pomiary A/B/D/E w toku) | Etap 14 pokrywa wbudowany FPC: `X-Magento-Cache-Debug`/`X-Magento-Tags`, `IdentityInterface` na bloku i modelu, `cacheable="false"` (i jego koszt: wyłącza cache całej strony), unieważnianie po tagach przez `clean_cache_by_tags`, obejście przez surowy SQL. **Nadal luka:** Varnish/ESI (brak w środowisku — tylko lektura wygenerowanego VCL), private content / `customer-data` sections |
-| **Stores / websites / store views** | ❌ brak | **luka** — cały plan działa na jednym store view; brak zadania o scope resolution (`ScopeInterface`, website-level config, per-store-view różne ceny/atrybuty), przełączaniu store code w URL |
+| **Stores / websites / store views** | ✅ Etap 15 | Własna hierarchia website → grupa → store view (`my_website` → `my_group` → `my_store_my_website`, oraz `mystore` na `base`), konfig w scope `store`/`website`/`default` z fallbackiem zmierzonym na własnych wierszach `core_config_data`, `catalog/price/scope` = website z różnymi cenami per website (34 vs 30), `?___store=`. Wynikły też nieoczywiste rzeczy: switcher na stronie produktu pokazuje tylko website, do których produkt jest przypisany; nieaktywny store view po cichu wraca do domyślnego. **Nieprzećwiczone:** cookie `store` i `X-Magento-Vary` (stretch E), konfiguracja z `MAGE_RUN_CODE` (osobne domeny per website), cofnięcie `catalog/price/scope` (decyzja otwarta) |
 | Architektura panelu admina (ACL, menu, UI Components) | ✅ Etap 5 | solidnie |
 | Atrybuty i attribute sety | ⚠️ Etap 3, tylko product attribute select | **luka częściowa** — brak tworzenia/klonowania attribute set przez CLI/UI, brak atrybutów EAV na innych encjach (customer, category) |
 
-**Werdykt sekcji 1:** ~65% realnie przećwiczone (po Etapach 11–13 doszły
-cron, i18n i URL rewrites), reszta (FPC, multi-store, attribute sets) to
-konkretne, dopisywalne zadania — nie wymagają Adobe Commerce, da się je
-zrobić w tym repo.
+**Werdykt sekcji 1:** ~75% realnie przećwiczone (po Etapach 11–15 doszły
+cron, i18n, URL rewrites, FPC i multi-store; FPC z jeszcze niedokończonymi
+pomiarami), reszta (attribute sets, część Varnish/ESI) to konkretne,
+dopisywalne zadania — nie wymagają Adobe Commerce, da się je zrobić w tym
+repo.
 
 ## Sekcja 2 — Customizations (36% egzaminu)
 
@@ -127,8 +128,10 @@ Cloud pipeline z `.magento.app.yaml`/`ece-tools`).
    patch z cichym rewrite + przekierowaniem 301, zweryfikowane
    end-to-end). Zostaje: autogenerowane rewrite'y katalogu przy zmianie
    URL key produktu.
-3. Nowy etap/zadanie: **Multi-store/website** — drugi store view, różne
-   ceny/atrybuty per scope, przełączanie `?___store=`.
+3. ~~Multi-store/website~~ — **zrobione, Etap 15** (drugi store view i druga
+   website z grupą, config w trzech scope'ach, ceny per website,
+   `?___store=`). Zostaje: atrybuty per scope (nie tylko cena), stretch E
+   (cookie `store`), osobne domeny z `MAGE_RUN_CODE`.
 4. Rozszerzenie Etapu 3: **attribute sets** (tworzenie/klonowanie),
    EAV na innej encji niż produkt (np. customer).
 5. Rozszerzenie Etapu 6: SOAP endpoint, async/bulk API
@@ -156,14 +159,16 @@ Cloud pipeline z `.magento.app.yaml`/`ece-tools`).
 
 ## Podsumowanie liczbowe (szacunkowe, subiektywne)
 
-- Sekcja Architecture (52%): ~65% pokryte przez plan (Etapy 11–13 dodały
-  cron, i18n i URL rewrites), reszta dopisywalna w tym repo.
+- Sekcja Architecture (52%): ~75% pokryte przez plan (Etapy 11–15 dodały
+  cron, i18n, URL rewrites, FPC i multi-store), reszta dopisywalna w tym
+  repo.
 - Sekcja Customizations (36%): ~25–30% pokryte (głównie catalog + API),
   checkout/sales i SaaS data flow to spora, częściowo niedopisywalna luka.
 - Sekcja Cloud (12%): ~0% pokryte, wymaga osobnego środowiska.
 
-Łącznie: ukończenie **całego** obecnego planu nauki (Etapy 0–10) daje
-solidne ~45–55% realnego przygotowania do egzaminu — wystarczające jako
+Łącznie: ukończenie **całego** obecnego planu nauki (Etapy 0–15) daje
+ok. 50% realnego przygotowania do egzaminu (ważone wagami sekcji:
+0,75·52% + ~0,28·36% + 0·12% ≈ 49%) — wystarczające jako
 fundament, ale **nie wystarczające samo w sobie** do zdania AD0-E724 bez
 dodatkowego środowiska Adobe Commerce Cloud/Commerce i tematów
 wymienionych wyżej jako "braki specyficzne dla Adobe Commerce".

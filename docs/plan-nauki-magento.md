@@ -670,8 +670,8 @@ category, "sklep" logiczny), Store View (locale/waluta/UI), `core_config_data`
 bieżącego store'a bez podawania kodu, `catalog/price/scope` (global vs
 per-website ceny), przełącznik `?___store=<code>`.
 
-**Środowisko:** obecnie repo ma **jeden** website (`base`) i **jeden** store
-view (`default`) — zweryfikowane `bin/magento store:website:list` /
+**Środowisko (stan wyjściowy, sprzed ćwiczenia):** repo miało **jeden**
+website (`base`) i **jeden** store view (`default`) — zweryfikowane `bin/magento store:website:list` /
 `bin/magento store:list`. `bin/n98-magerun2` ma gotowe komendy CLI do
 tworzenia struktury bez klikania w adminie: `sys:website:create`,
 `sys:store-group:create`, `sys:store:create` (odpowiednio `*:delete`, gdyby
@@ -758,14 +758,57 @@ requeście (bez parametru) — czy druga wizyta "pamięta" wybrany store view, i
 po czym (podpowiedź: cookie `store`, plus jak to się ma do `X-Magento-Vary` z
 Etapu 14).
 
+**Status (2026-09-21):** A–D wykonane i zmierzone, do zrobienia zostają dwie
+rzeczy.
+- ✅ B: `mystore` na `base`; wiersz `stores`/2 w `core_config_data`.
+- ✅ C: `my_website` → `my_group` → `my_store_my_website`; wiersz `websites`/2;
+  store 3 dziedziczy wartość website (brak własnego wiersza).
+- ✅ D: `catalog/price/scope` = 1, wariant 1797 kosztuje 34 na `base` i 30 na
+  `my_website` (baza, indeks cen i `ProductRepository` w kontekście store'a).
+- ⏳ D.3: `catalog/price/scope` nadal `1` — decyzja: cofnąć na `0` czy zostawić.
+- ⏳ E (stretch): nie zrobiony.
+
+**Zmierzone `/helloworld` po `cache:clean full_page`:**
+`(default scope)` bez parametru i dla `?___store=default`, `changed to mystore`
+dla `mystore`, `my_website` dla `my_store_my_website`.
+
+**Ustalenia z ćwiczenia (warte zapamiętania):**
+- **Nieaktywny store view po cichu wraca do domyślnego.** `StoreResolver`
+  łapie `NoSuchEntityException` z `getActiveStoreByCode()`, czyści parametr i
+  cookie `store` i bierze domyślny — bez błędu. Tak wyglądało `?___store=mystore`
+  przy `is_active=0`.
+- **`___store` a website.** `StoreResolver/Website::getAllowedStoreIds()` ma
+  warunek `($scopeCode && ta sama website) || (!$scopeCode)`. Bez `MAGE_RUN_CODE`
+  (jak tu) `$scopeCode` jest pusty, więc `?___store=` przełącza na **dowolny
+  aktywny** store view, także z innej website (zmierzone: `my_store_my_website`
+  działa pod `magento.test`). Z ustawionym `MAGE_RUN_CODE` (osobne domeny per
+  website) działałoby tylko w obrębie tej website — tego nie sprawdzano.
+- **Formularz admina ustawia `website_id` store view z jego grupy**
+  (`Backend/.../Store/Save.php:113`). Store view wpisany SQL-em może mieć
+  niespójne `website_id` (u nas `0`), którego formularz nigdy by nie zapisał.
+- **Website w scope-switcherze pojawia się tylko, gdy ma grupę ze store view**
+  (szablon rysuje ją w pętli po store views), a website i grupa są w nim
+  etykietami — klikalne są wyłącznie store views.
+- **Switcher na stronie produktu pokazuje tylko website, do których produkt
+  jest przypisany** (`Product/Edit.php:90`: `setWebsiteIds($product->getWebsiteIds())`).
+  Bez przypisania do `My Website` nie da się tam ustawić ceny per website.
+- **`config:show` bez `--scope` nie pokazuje wartości z `config.xml`**
+  (zwraca puste); do sprawdzania defaultów użyj `ScopeConfigInterface`.
+- **FPC trzyma osobny wpis dla każdego URL-a z query stringiem**, a zapis
+  configu w adminie go nie odświeża — po zmianie wartości trzeba
+  `cache:clean full_page` (zob. Etap 14, A.3).
+- Storefront drugiej website nie pokaże jeszcze ceny: jedyny produkt w
+  `my_website` to niewidoczny wariant 1797, a jego konfigurowalny rodzic (1812)
+  nie jest do niej przypisany.
+
 **Kryteria odbioru:**
-- Umiesz narysować/opisać hierarchię Website → Store Group → Store View na
+- ✅ (dane utworzone) Umiesz narysować/opisać hierarchię Website → Store Group → Store View na
   Twoich własnych, utworzonych w tym etapie encjach (nie tylko na
   `base`/`default`).
-- Wyjaśnisz kolejność fallbacku configu (`store` → `website` → `default`) i
+- ✅ (zmierzone) Wyjaśnisz kolejność fallbacku configu (`store` → `website` → `default`) i
   pokażesz to na realnym wierszu w `core_config_data`, który sam(a)
   utworzyłeś/aś.
-- `getGreetingSuffix()` daje różne wyniki na `/helloworld` w zależności od
+- ✅ `getGreetingSuffix()` daje różne wyniki na `/helloworld` w zależności od
   `?___store=`, zgodnie z Twoim przewidywaniem z punktu B.2 (albo: potrafisz
   wyjaśnić, dlaczego przewidywanie było błędne).
 - Wyjaśnisz różnicę między `catalog/price/scope` = global a website, i
