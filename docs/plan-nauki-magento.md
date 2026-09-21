@@ -758,14 +758,21 @@ requeście (bez parametru) — czy druga wizyta "pamięta" wybrany store view, i
 po czym (podpowiedź: cookie `store`, plus jak to się ma do `X-Magento-Vary` z
 Etapu 14).
 
-**Status (2026-09-21):** A–D wykonane i zmierzone, do zrobienia zostają dwie
-rzeczy.
+**Status (2026-09-21):** A–D wykonane i zmierzone, do zrobienia zostaje
+stretch E.
 - ✅ B: `mystore` na `base`; wiersz `stores`/2 w `core_config_data`.
 - ✅ C: `my_website` → `my_group` → `my_store_my_website`; wiersz `websites`/2;
   store 3 dziedziczy wartość website (brak własnego wiersza).
 - ✅ D: `catalog/price/scope` = 1, wariant 1797 kosztuje 34 na `base` i 30 na
   `my_website` (baza, indeks cen i `ProductRepository` w kontekście store'a).
-- ⏳ D.3: `catalog/price/scope` nadal `1` — decyzja: cofnąć na `0` czy zostawić.
+- ✅ D.3: `catalog/price/scope` cofnięte na `0` (`config:set` sam oznaczył indeks
+  cen jako `Reindex required`, po `indexer:reindex catalog_product_price` i
+  `cache:flush` wszystkie trzy store views dają dla 1797 cenę 34). Zmierzone
+  skutki: wiersz `store_id=3` z ceną 30 **zostaje w bazie**
+  (`catalog_product_entity_decimal`), ale jest ignorowany, a indeks dla website 2
+  wraca do 34. Ponowne przełączenie na `1` przywróciłoby 30 bez ponownego
+  wpisywania. Na sklepie z prawdziwymi danymi to właśnie ta rozbieżność między
+  zapisanymi a obowiązującymi cenami jest ryzykiem.
 - ⏳ E (stretch): nie zrobiony.
 
 **Zmierzone `/helloworld` po `cache:clean full_page`:**
