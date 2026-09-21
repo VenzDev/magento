@@ -46,7 +46,7 @@ większości z "czystym" Magento, niezależnym od edycji.
 | Plugin / preference / observer | ✅ Etap 2 | solidnie, w tym `di.xml` |
 | **URL rewrites** | ✅ Etap 13 | `UrlPersistInterface`/`UrlRewriteFactory`, `url_rewrite` (entity `custom`, unique constraint request_path+store_id, redirect_type 0 vs 301), `NoRouteHandler` — data patch w `Training_HelloWorld` zweryfikowany end-to-end (`/witaj` → 200 cicho, `/stare-hello` → 301, `/nieistniejace` → 404). Nieprzećwiczone: autogenerowane rewrite'y katalogu przy zmianie URL key produktu |
 | Cache (block cache, `cache:clean` vs `cache:flush`) | ⚠️ Etap 4 (cache blokowy) + Etap 14 (FPC, kod unieważniania po tagach zrobiony i zweryfikowany, pomiary A/B/D/E w toku) | Etap 14 pokrywa wbudowany FPC: `X-Magento-Cache-Debug`/`X-Magento-Tags`, `IdentityInterface` na bloku i modelu, `cacheable="false"` (i jego koszt: wyłącza cache całej strony), unieważnianie po tagach przez `clean_cache_by_tags`, obejście przez surowy SQL. **Nadal luka:** Varnish/ESI (brak w środowisku — tylko lektura wygenerowanego VCL), private content / `customer-data` sections |
-| **Stores / websites / store views** | ✅ Etap 15 | Własna hierarchia website → grupa → store view (`my_website` → `my_group` → `my_store_my_website`, oraz `mystore` na `base`), konfig w scope `store`/`website`/`default` z fallbackiem zmierzonym na własnych wierszach `core_config_data`, `catalog/price/scope` = website z różnymi cenami per website (34 vs 30), `?___store=`. Wynikły też nieoczywiste rzeczy: switcher na stronie produktu pokazuje tylko website, do których produkt jest przypisany; nieaktywny store view po cichu wraca do domyślnego. **Nieprzećwiczone:** cookie `store` i `X-Magento-Vary` (stretch E), konfiguracja z `MAGE_RUN_CODE` (osobne domeny per website). Zakres ceny został na końcu cofnięty na global — cena per website zostaje w bazie, ale jest ignorowana |
+| **Stores / websites / store views** | ✅ Etap 15 | Własna hierarchia website → grupa → store view (`my_website` → `my_group` → `my_store_my_website`, oraz `mystore` na `base`), konfig w scope `store`/`website`/`default` z fallbackiem zmierzonym na własnych wierszach `core_config_data`, `catalog/price/scope` = website z różnymi cenami per website (34 vs 30), `?___store=`. Wynikły też nieoczywiste rzeczy: switcher na stronie produktu pokazuje tylko website, do których produkt jest przypisany; nieaktywny store view po cichu wraca do domyślnego. Cookie `store` i `X-Magento-Vary` zmierzone (ustawia je przełącznik sklepów, FPC różnicuje po vary, nie po `store`). **Nieprzećwiczone:** konfiguracja z `MAGE_RUN_CODE` (osobne domeny per website). Zakres ceny został na końcu cofnięty na global — cena per website zostaje w bazie, ale jest ignorowana |
 | Architektura panelu admina (ACL, menu, UI Components) | ✅ Etap 5 | solidnie |
 | Atrybuty i attribute sety | ⚠️ Etap 3, tylko product attribute select | **luka częściowa** — brak tworzenia/klonowania attribute set przez CLI/UI, brak atrybutów EAV na innych encjach (customer, category) |
 
@@ -130,8 +130,8 @@ Cloud pipeline z `.magento.app.yaml`/`ece-tools`).
    URL key produktu.
 3. ~~Multi-store/website~~ — **zrobione, Etap 15** (drugi store view i druga
    website z grupą, config w trzech scope'ach, ceny per website,
-   `?___store=`). Zostaje: atrybuty per scope (nie tylko cena), stretch E
-   (cookie `store`), osobne domeny z `MAGE_RUN_CODE`.
+   `?___store=`). Zostaje: atrybuty per scope (nie tylko cena) i osobne domeny z
+   `MAGE_RUN_CODE`. Stretch E (cookie `store`, `X-Magento-Vary`) zrobiony.
 4. Rozszerzenie Etapu 3: **attribute sets** (tworzenie/klonowanie),
    EAV na innej encji niż produkt (np. customer).
 5. Rozszerzenie Etapu 6: SOAP endpoint, async/bulk API

@@ -758,8 +758,7 @@ requeście (bez parametru) — czy druga wizyta "pamięta" wybrany store view, i
 po czym (podpowiedź: cookie `store`, plus jak to się ma do `X-Magento-Vary` z
 Etapu 14).
 
-**Status (2026-09-21):** A–D wykonane i zmierzone, do zrobienia zostaje
-stretch E.
+**Status (2026-09-21):** A–E wykonane i zmierzone.
 - ✅ B: `mystore` na `base`; wiersz `stores`/2 w `core_config_data`.
 - ✅ C: `my_website` → `my_group` → `my_store_my_website`; wiersz `websites`/2;
   store 3 dziedziczy wartość website (brak własnego wiersza).
@@ -773,7 +772,8 @@ stretch E.
   wraca do 34. Ponowne przełączenie na `1` przywróciłoby 30 bez ponownego
   wpisywania. Na sklepie z prawdziwymi danymi to właśnie ta rozbieżność między
   zapisanymi a obowiązującymi cenami jest ryzykiem.
-- ⏳ E (stretch): nie zrobiony.
+- ✅ E (stretch): cookie `store` i `X-Magento-Vary` zmierzone `curl`-em z
+  cookie jarem (wyniki w "Ustalenia z ćwiczenia" niżej).
 
 **Zmierzone `/helloworld` po `cache:clean full_page`:**
 `(default scope)` bez parametru i dla `?___store=default`, `changed to mystore`
@@ -804,6 +804,36 @@ dla `mystore`, `my_website` dla `my_store_my_website`.
 - **FPC trzyma osobny wpis dla każdego URL-a z query stringiem**, a zapis
   configu w adminie go nie odświeża — po zmianie wartości trzeba
   `cache:clean full_page` (zob. Etap 14, A.3).
+- **E: skąd `StoreManager::getStore()` bierze store.** Bez argumentu woła
+  `StoreResolver::getCurrentStoreId()` (raz na request). Kolejność: kod store w
+  ścieżce URL (przy `web/url/use_store`) → parametr `___store` → cookie `store`
+  → store domyślny. Nieaktywny lub nieistniejący store daje fallback do
+  domyślnego, a plugin `StoreCookie::beforeDispatch` kasuje cookie wskazującą
+  na taki store.
+- **E: cookie `store` ustawia przełącznik, nie zwykłe `?___store=`.** Zmierzone:
+  `?___store=mystore` ustawiło tylko `X-Magento-Vary`, więc aplikacja nie
+  zapamiętuje wyboru (druga wizyta na `MISS` wraca do domyślnego). Cookie
+  `store=<kod>` (365 dni, **nie** HttpOnly, SameSite=Lax) razem z
+  `X-Magento-Vary`, `private_content_version` i `section_data_clean` pojawia
+  się po pełnym przełączniku: `stores/store/redirect` → `stores/store/switch`
+  (`StoreSwitcher/ManageStoreCookie`, dwa przekierowania 302).
+- **E: FPC różnicuje po `X-Magento-Vary`, nie po `store`.** Klucz to URL +
+  `X-Magento-Vary`, czyli hash wartości http-contextu różnych od domyślnych
+  (kod store to jedna z nich): `mystore` → `d0fb1c470a…`,
+  `my_store_my_website` → `d0a6780f6a…`, klient bez cookie → klucz domyślny.
+  - Poprawny przepływ (przełącznik → cookie `store` + vary): wizyty dają `HIT`
+    ze stroną właściwego store (`changed to mystore`, `my_website`), a klient
+    bez cookie dostaje domyślną — bez przecieku między wariantami.
+  - `store` **bez** vary: jeśli strona domyślna jest w cache, dostajesz `HIT` ze
+    stroną **domyślną** (cookie zignorowane); jeśli jej nie ma, każdy request to
+    `MISS` z treścią zgodną z cookie (zapis idzie pod klucz z varianem, a odczyt
+    pod domyślny).
+  - vary **bez** `store` (wejście przez `?___store=`, potem zwykły URL): wynik
+    zależy od stanu cache. Raz dostałem stronę domyślną (i wniosek z kolejnego
+    testu: zapisaną pod kluczem wariantu `mystore`), innym razem `HIT` z treścią
+    `mystore`. **Nie używaj `?___store=` jako trwałego przełącznika** — to
+    parametr jednorazowy; do przełączania służy przełącznik, który ustawia oba
+    cookie.
 - Storefront drugiej website nie pokaże jeszcze ceny: jedyny produkt w
   `my_website` to niewidoczny wariant 1797, a jego konfigurowalny rodzic (1812)
   nie jest do niej przypisany.
