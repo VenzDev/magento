@@ -8,16 +8,13 @@ use Magento\Customer\Api\AccountManagementInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\Exception\State\ExpiredException;
-use Magento\Framework\Stdlib\DateTime\DateTime;
-use Training\AccountConfirmation\Setup\Patch\Data\AddConfirmationRequestedAtAttribute;
+use Training\AccountConfirmation\Model\ConfirmationExpirationChecker;
 
 class ExpireConfirmationKeyPlugin
 {
-    private const CONFIRMATION_EXPIRATION_HOURS = 24;
-
     public function __construct(
         private readonly CustomerRepositoryInterface $customerRepository,
-        private readonly DateTime $dateTime
+        private readonly ConfirmationExpirationChecker $expirationChecker
     ) {
     }
 
@@ -27,9 +24,11 @@ class ExpireConfirmationKeyPlugin
      * `before` nie zmienia wyniku oryginalnej metody, może tylko zablokować jej wykonanie
      * rzucając wyjątek (tu: gdy link jest przeterminowany) albo podmienić argumenty.
      *
-     * Confirm::execute() łapie \Magento\Framework\Exception\StateException i renderuje
-     * komunikat "This confirmation key is invalid or has expired." — dlatego rzucamy
-     * ExpiredException (rozszerza StateException), nie zwykły LocalizedException.
+     * Confirm::execute() łapie \Magento\Framework\Exception\StateException — dlatego rzucamy
+     * ExpiredException (rozszerza StateException). Treść komunikatu widoczną dla Klienta
+     * ustawia CustomizeConfirmationMessagesPlugin (na kontrolerze), który sprawdza wygaśnięcie
+     * PRZED wywołaniem tej metody — ten plugin jest więc również ostatnią linią obrony,
+     * np. dla wywołań przez webapi/graphql, gdzie tamten plugin nie działa.
      *
      * @return array{0: string, 1: string}
      */
@@ -53,26 +52,9 @@ class ExpireConfirmationKeyPlugin
         return [$customerId, $confirmationKey];
     }
 
-    /**
-     * Rzuca ExpiredException, jeśli od zapisania confirmation_requested_at minęło więcej niż
-     * self::CONFIRMATION_EXPIRATION_HOURS godzin. Brak atrybutu (np. konto sprzed wdrożenia
-     * tego modułu) traktujemy jako "nie blokuj" — nie mamy punktu odniesienia w czasie.
-     */
     private function assertNotExpired(CustomerInterface $customer): void
     {
-        $requestedAt = $customer->getCustomAttribute(AddConfirmationRequestedAtAttribute::ATTRIBUTE_CODE);
-        if ($requestedAt === null || !$requestedAt->getValue()) {
-            return;
-        }
-
-        $requestedAtTimestamp = strtotime((string) $requestedAt->getValue());
-        if ($requestedAtTimestamp === false) {
-            return;
-        }
-
-        $expiresAtTimestamp = $requestedAtTimestamp + self::CONFIRMATION_EXPIRATION_HOURS * 3600;
-
-        if ($this->dateTime->gmtTimestamp() > $expiresAtTimestamp) {
+        if ($this->expirationChecker->isExpired($customer)) {
             throw new ExpiredException(__('This confirmation key is invalid or has expired.'));
         }
     }
