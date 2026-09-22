@@ -24,11 +24,10 @@ class StoreConfirmationRequestedAtObserver implements ObserverInterface
      * zaraz po AccountManagement::createAccount() — klient w evencie jest już zapisany w bazie,
      * `customer` to `\Magento\Customer\Api\Data\CustomerInterface`.
      *
-     * TODO: jeśli rejestracja wymaga potwierdzenia maila (customer->getConfirmation() !== null —
+     * Jeśli rejestracja wymaga potwierdzenia maila (customer->getConfirmation() !== null —
      * AccountManagement ustawia tam losowy klucz aktywacyjny, gdy customer/create_account/confirm
-     * jest włączone), zapisz bieżący czas (np. $this->dateTime->gmtDate()) do atrybutu
-     * AddConfirmationRequestedAtAttribute::ATTRIBUTE_CODE przez setCustomAttribute() i odeślij
-     * klienta przez $this->customerRepository->save($customer). To znacznik, od którego
+     * jest włączone), zapisujemy bieżący czas do atrybutu
+     * AddConfirmationRequestedAtAttribute::ATTRIBUTE_CODE. To znacznik, od którego
      * ExpireConfirmationKeyPlugin liczy 24h ważności linku aktywacyjnego.
      *
      * Uwaga: ten event dotyczy tylko rejestracji ze storefrontu (CreatePost) — rejestracja przez
@@ -39,6 +38,15 @@ class StoreConfirmationRequestedAtObserver implements ObserverInterface
         /** @var CustomerInterface $customer */
         $customer = $observer->getEvent()->getData('customer');
 
-        // TODO: dopisz logikę opisaną powyżej
+        if ($customer->getConfirmation() === null) {
+            return;
+        }
+
+        $customer->setCustomAttribute(
+            AddConfirmationRequestedAtAttribute::ATTRIBUTE_CODE,
+            $this->dateTime->gmtDate()
+        );
+
+        $this->customerRepository->save($customer);
     }
 }

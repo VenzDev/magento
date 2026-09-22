@@ -43,6 +43,18 @@ class AddConfirmationRequestedAtAttribute implements DataPatchInterface
             ]
         );
 
+        // Bez przypisania do attribute setu \Magento\Eav\Model\Entity\AbstractEntity::_collectSaveData()
+        // po cichu pomija tę wartość przy save() (isInSet() === false) — bez wyjątku, bez logu.
+        $attributeSetId = $eavSetup->getDefaultAttributeSetId(Customer::ENTITY);
+        $attributeGroupId = $eavSetup->getDefaultAttributeGroupId(Customer::ENTITY, $attributeSetId);
+
+        $eavSetup->addAttributeToSet(
+            Customer::ENTITY,
+            $attributeSetId,
+            $attributeGroupId,
+            self::ATTRIBUTE_CODE
+        );
+
         $this->moduleDataSetup->getConnection()->endSetup();
     }
 
