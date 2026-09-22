@@ -4,5 +4,7 @@
     <type name="Magento\Customer\Api\AccountManagementInterface">
         <plugin name="training_account_confirmation_expire_confirmation_key"
                 type="Training\AccountConfirmation\Plugin\ExpireConfirmationKeyPlugin"/>
+        <plugin name="training_account_confirmation_refresh_on_resend"
+                type="Training\AccountConfirmation\Plugin\RefreshConfirmationRequestedAtOnResendPlugin"/>
     </type>
 </config>

@@ -4,18 +4,15 @@ declare(strict_types=1);
 
 namespace Training\AccountConfirmation\Observer;
 
-use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use Magento\Framework\Stdlib\DateTime\DateTime;
-use Training\AccountConfirmation\Setup\Patch\Data\AddConfirmationRequestedAtAttribute;
+use Training\AccountConfirmation\Model\ConfirmationRequestedAtUpdater;
 
 class StoreConfirmationRequestedAtObserver implements ObserverInterface
 {
     public function __construct(
-        private readonly CustomerRepositoryInterface $customerRepository,
-        private readonly DateTime $dateTime
+        private readonly ConfirmationRequestedAtUpdater $confirmationRequestedAtUpdater
     ) {
     }
 
@@ -26,9 +23,7 @@ class StoreConfirmationRequestedAtObserver implements ObserverInterface
      *
      * Jeśli rejestracja wymaga potwierdzenia maila (customer->getConfirmation() !== null —
      * AccountManagement ustawia tam losowy klucz aktywacyjny, gdy customer/create_account/confirm
-     * jest włączone), zapisujemy bieżący czas do atrybutu
-     * AddConfirmationRequestedAtAttribute::ATTRIBUTE_CODE. To znacznik, od którego
-     * ExpireConfirmationKeyPlugin liczy 24h ważności linku aktywacyjnego.
+     * jest włączone), zapisujemy bieżący czas jako punkt odniesienia dla 24h ważności linku.
      *
      * Uwaga: ten event dotyczy tylko rejestracji ze storefrontu (CreatePost) — rejestracja przez
      * admin/REST/GraphQL go nie wywołuje.
@@ -42,11 +37,6 @@ class StoreConfirmationRequestedAtObserver implements ObserverInterface
             return;
         }
 
-        $customer->setCustomAttribute(
-            AddConfirmationRequestedAtAttribute::ATTRIBUTE_CODE,
-            $this->dateTime->gmtDate()
-        );
-
-        $this->customerRepository->save($customer);
+        $this->confirmationRequestedAtUpdater->touch($customer);
     }
 }
