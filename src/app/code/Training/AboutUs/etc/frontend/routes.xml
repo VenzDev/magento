@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
+    <router id="standard">
+        <!-- /about-us → about-us/index/index; layout handle bierze się z route id: aboutus_index_index -->
+        <route id="aboutus" frontName="about-us">
+            <module name="Training_AboutUs"/>
+        </route>
+    </router>
+</config>
